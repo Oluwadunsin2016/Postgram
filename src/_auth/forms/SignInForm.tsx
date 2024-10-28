@@ -57,10 +57,10 @@ console.log(session);
   return (
       <Form {...form}>
       <div className="sm:w-420 flex flex-center flex-col">
-      <img src="/assets/images/logo.svg" alt="" />
+      <img src="/assets/images/Logo-removebg-preview.png" alt="logo" height={80} width={280} />
 
-      <h2 className="h3-bold md:h2-bold pt-5 sm:pt-12">Login to your account</h2>
-      <p className="text-light-3 small-medium md:base-regular mt-12">Welcome back,please enter your details</p>
+      <h2 className="h3-bold md:h2-bold pt-5">Login to your account</h2>
+      <p className="text-light-3 small-medium md:base-regular mt-4">Welcome back,please enter your details</p>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5 w-full mt-4">
         <FormField
