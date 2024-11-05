@@ -13,12 +13,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
-import { useChangeProfilePhoto, useCreateUserAccount, useGetUserPosts, useSignInAccount, useUpdateUser } from "@/lib/react-query/queriesAndMutation"
+import { useCreateUserAccount, useGetUserPosts, useSignInAccount } from "@/lib/react-query/queriesAndMutation"
 import { useUserContext } from "@/context/AuthContext"
 import Loader from "@/components/ui/shared/Loader"
 import { profileValidation } from "@/lib/validators"
 import { Textarea } from "@/components/ui/textarea"
 import { IUser } from "@/types"
+import { useChangeProfilePhoto, useGetUserProfile, useUpdateUser } from "@/lib/react-query/queries"
  
 
 const UpdateProfile = () => {
@@ -33,7 +34,7 @@ const UpdateProfile = () => {
   const {
   data:user,
   isLoading: isUserLoading,
-} = useGetUserPosts(id||'');
+} = useGetUserProfile(id||'');
 
   
 
@@ -41,9 +42,7 @@ const UpdateProfile = () => {
   const form = useForm<z.infer<typeof profileValidation>>({
     resolver: zodResolver(profileValidation),
     defaultValues: {
-      id: user?.$id,
       imageUrl: user?.imageUrl,
-      imageId: user?.imageId,
       name: user?.name,
       username: user?.username,
       email: user?.email,
@@ -71,12 +70,12 @@ console.log(updatedUser);
 
   const selectPhoto=async(e:any)=>{
   console.log(e.target.files[0])
-  const result=await changeProfilePhoto({files:e.target.files,imageId:user?.imageId||'',userId:user?.$id||''})
+  const result=await changeProfilePhoto({file:e.target.files[0],userId:user?._id||''})
   console.log(result);
     if (result) {
     navigate(`/profile/${id}`)
   }else{
-  toast({title:'Failed to update. Try again'})
+  toast({title:'Failed to update. Try again', variant:'destructive', className:'bg-red border-none'})
   }
   
   }

@@ -16,9 +16,10 @@ import FileUploader from "../ui/shared/FileUploader"
 import { postValidation } from "@/lib/validators"
 import { Models } from "appwrite"
 import { useUserContext } from "@/context/AuthContext"
-import { useCreatePost, useUpdatePost } from "@/lib/react-query/queriesAndMutation"
+// import { useUpdatePost } from "@/lib/react-query/queriesAndMutation"
 import { useToast } from "@/hooks/use-toast"
 import { useNavigate } from "react-router-dom"
+import { useCreatePost, useUpdatePost } from "@/lib/react-query/queries"
  
 type PostFormProps={
 post?:Models.Document;
@@ -37,8 +38,8 @@ const form = useForm<z.infer<typeof postValidation>>({
     resolver: zodResolver(postValidation),
     defaultValues: {
       caption: post ? post?.caption:"",
-      file: [],
       location: post ? post?.location:"",
+      imageUrl:post?post?.imageUrl:'',
       tags: post ? post?.tags.join(','):"",
     },
   })
@@ -48,8 +49,7 @@ const form = useForm<z.infer<typeof postValidation>>({
 if (post && action==='Update') {
    const updatedPost=await updatePost({
    ...values,
-   postId:post.$id,
-   imageId:post?.imageId,
+   postId:post._id,
    imageUrl:post?.imageUrl
    })
 
@@ -57,12 +57,12 @@ if (post && action==='Update') {
     toast({title:'Please, try again'})
    }
 
-   return navigate(`/posts/${post.$id}`)
+   return navigate(`/posts/${post._id}`)
 }
 
    const newPost=await createPost({
    ...values,
-   userId:user.id
+   userId:user._id
    })
    if (!newPost) toast({title:'Please try again'})
     navigate('/')

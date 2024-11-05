@@ -1,23 +1,37 @@
-import { Button } from '@/components/ui/button'
+
 import Loader from '@/components/ui/shared/Loader'
 import PostStats from '@/components/ui/shared/PostStats'
 import { useUserContext } from '@/context/AuthContext'
-import { useDeletePost, useGetPostById } from '@/lib/react-query/queriesAndMutation'
+import { useDeletePost, useGetPostDetails } from '@/lib/react-query/queries'
+import { useGetPostById } from '@/lib/react-query/queriesAndMutation'
 import { multiFormatDateString } from '@/lib/utils'
-import React from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import React, { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
 const PostDetails = () => {
+const [isDialogOpen, setIsDialogOpen] = useState(false);
 const {user} =useUserContext()
 const {id} = useParams()
  const navigate = useNavigate();
-const {data:post, isLoading} =useGetPostById(id||'')
- const { mutate: deletePost } = useDeletePost();
+// const {data:post, isLoading} =useGetPostById(id||'')
+const {data:post, isLoading} =useGetPostDetails(id||'')
+//  const { mutate: deletePost } = useDeletePost();
+  const { mutate: deletePost } = useDeletePost();
 
-const handleDeletePost=()=>{
-  deletePost({ postId: id ||'', imageId: post?.imageId });
+  const handleDeletePost = () => {
+    if (window.confirm("Are you sure you want to delete this post?")) {
+      deletePost(post._id);
+      setIsDialogOpen(false)
     navigate(-1);
-}
+    }
+  };
 
   return (
     <div className='post_details-container'>
@@ -27,7 +41,7 @@ const handleDeletePost=()=>{
 
        <div className="post_details-info">
        <div className='flex-between w-full'>
-          <Link to={`/profile/${post?.creator.$id}`} className='flex items-center gap-3'>
+          <Link to={`/profile/${post?.creator._id}`} className='flex items-center gap-3'>
             <img
               src={
                 post?.creator.imageUrl ||
@@ -44,7 +58,7 @@ const handleDeletePost=()=>{
               </p>
               <div className="flex-center gap-2 text-light-3">
                 <p className="suble-semibold lg:small-regular">
-                  {multiFormatDateString(post?.$createdAt)}
+                  {multiFormatDateString(post?.createdAt)}
                 </p>
                 -
                 <p className="suble-semibold lg:small-regular">
@@ -53,20 +67,26 @@ const handleDeletePost=()=>{
               </div>
             </div>
               </Link>
-
-              <div className="flex-center">
-              {user.id===post?.creator.$id&&<Link to={`/update-post/${post?.$id}`}>
-              <img src="/assets/icons/edit.svg" alt="edit" width={24} height={24} />
-              </Link>}
-
-              {user.id===post?.creator.$id&&    <Button variant='ghost' onClick={handleDeletePost} className='ghost_details-delete-btn'>
-               <img src="/assets/icons/delete.svg" alt="delete" width={24} height={24} />
-              </Button>}
-              </div>
+                 <DropdownMenu>
+         <DropdownMenuTrigger className="border-none outline-none cursor-pointer"> <img src="/assets/icons/more-vertical.svg" className='cursor-pointer' alt="more" width={22} height={22} /></DropdownMenuTrigger>
+         {user._id===post?.creator._id&&
+         <DropdownMenuContent className="bg-slate-800 border-none outline-none w-auto">
+          <Link to={`/update-post/${post?._id}`}>
+         <DropdownMenuItem className="cursor-pointer">
+            <img src="/assets/icons/edit.svg" alt="edit" width={20} height={20} />
+             <span>Edit</span>
+          </DropdownMenuItem>
+          </Link>
+         <DropdownMenuItem className="cursor-pointer" onClick={()=>setIsDialogOpen(true)}>
+            <img src="/assets/icons/delete.svg"   alt="delete" width={20} height={20} />
+        <span>Delete</span>
+          </DropdownMenuItem>
+         </DropdownMenuContent>
+         }
+        </DropdownMenu>
        </div>
-
        <hr className='border w-full border-dark-4/80' />
-       <div className="flex flex-col flex-1 w-full small-medium lg:base-medium py-5">
+       <div className="flex flex-col flex-1 w-full small-medium lg:base-medium pb-8">
       <p>{post?.caption}</p>
       <ul className="flex gap-1 mt-2">
       {post?.tags.map((tag:string,i:any)=>(
@@ -76,11 +96,26 @@ const handleDeletePost=()=>{
       </div>
 
       <div className="w-full">
-      <PostStats post={post} userId={user.id}/>
+      <PostStats post={post} userId={user._id}/>
       </div>
         </div>
     </div>
     )}
+         <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+  <AlertDialogContent className='bg-slate-800 border-none'>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Are you sure you want to delete this post?</AlertDialogTitle>
+      <AlertDialogDescription className='text-light-2'>
+        This action cannot be undone. This will permanently delete your post
+        and remove everything related to it.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel className='outline-dark-4 bg-transparent px-4  text-light-1 flex gap-2 py-1' onClick={()=>setIsDialogOpen(false)}>Cancel</AlertDialogCancel>
+      <AlertDialogAction className='text-dark-4 px-4 bg-light-1 flex gap-2 py-1' onClick={handleDeletePost}>Continue</AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
     </div>
   )
 }

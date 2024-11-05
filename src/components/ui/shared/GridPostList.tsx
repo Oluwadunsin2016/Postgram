@@ -15,7 +15,7 @@ const {user}=useUserContext()
   return (
     <ul className='grid-container'>
     {posts.map((post)=>(
-    <li className='relative min-w-80 h-80' key={post.$id}><Link to={`/posts/${post.$id}`} className='grid-post_link'>
+    <li className='relative min-w-80 h-80' key={post._id}><Link to={`/posts/${post._id}`} className='grid-post_link'>
     <img src={post?.imageUrl} alt="post" className='h-full w-full object-cover' />
     </Link>
     
@@ -27,7 +27,7 @@ const {user}=useUserContext()
     </div>
     )}
 
-    {showStats && <PostStats post={post} userId={user.id}/>}
+    {showStats && <PostStats post={post} userId={user._id}/>}
     </div>
     </li>
     ))}

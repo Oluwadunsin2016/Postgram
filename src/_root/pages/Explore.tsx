@@ -6,32 +6,39 @@ import useDebounce from "@/hooks/useDebounce";
 import Loader from "@/components/ui/shared/Loader";
 import GridPostList from "@/components/ui/shared/GridPostList";
 import { Input } from "@/components/ui/input";
-import { useGetPosts, useSearchPosts } from "@/lib/react-query/queriesAndMutation";
+import { useGetPosts } from "@/lib/react-query/queriesAndMutation";
+import { useGetAllPosts, useSearchPosts } from "@/lib/react-query/queries";
+import SearchResults from "@/components/ui/shared/SearchResults";
 
-export type SearchResultProps = {
-  isSearchFetching: boolean;
-  searchedPosts: any;
-};
+// export type SearchResultProps = {
+//   isSearchFetching: boolean;
+//   searchedPosts: any;
+// };
 
-const SearchResults = ({ isSearchFetching, searchedPosts }: SearchResultProps) => {
-  if (isSearchFetching) {
-    return <Loader />;
-  } else if (searchedPosts && searchedPosts.documents.length > 0) {
-    return <GridPostList posts={searchedPosts.documents} />;
-  } else {
-    return (
-      <p className="text-light-4 mt-10 text-center w-full">No results found</p>
-    );
-  }
-};
+// const SearchResults = ({ isSearchFetching, searchedPosts }: SearchResultProps) => {
+//   if (isSearchFetching) {
+//     return <Loader />;
+//   } else if (searchedPosts && searchedPosts?.length > 0) {
+//     return <GridPostList posts={searchedPosts} />;
+//   } else {
+//     return (
+//       <p className="text-light-4 mt-10 text-center w-full">No results found</p>
+//     );
+//   }
+// };
 
 const Explore = () => {
   const { ref, inView } = useInView();
-  const { data: posts, fetchNextPage, hasNextPage } = useGetPosts();
+  // const { data: posts, fetchNextPage, hasNextPage } = useGetPosts();
+  const {data:posts, isLoading:isPostLoading,isError:isErrorPosts,hasNextPage, fetchNextPage
+}=useGetAllPosts()
 
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounce(searchValue, 500);
   const { data: searchedPosts, isFetching: isSearchFetching } = useSearchPosts(debouncedSearch);
+
+console.log(searchedPosts);
+
 
   useEffect(() => {
     if (inView && !searchValue) {
@@ -48,7 +55,7 @@ const Explore = () => {
 
   const shouldShowSearchResults = searchValue !== "";
   const shouldShowPosts = !shouldShowSearchResults && 
-    posts.pages.every((item) => item?.documents.length === 0);
+    posts?.pages?.every((item) => item?.posts?.length === 0);
 
   return (
     <div className="explore-container">
@@ -98,7 +105,7 @@ const Explore = () => {
           <p className="text-light-4 mt-10 text-center w-full">End of posts</p>
         ) : (
           posts?.pages.map((item:any, index:any) => (
-            <GridPostList key={`page-${index}`} posts={item.documents} />
+            <GridPostList key={`page-${index}`} posts={item.posts} />
           ))
         )}
       </div>

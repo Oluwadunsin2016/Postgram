@@ -8,6 +8,7 @@ import { INavLink } from '@/types'
 import UserCard from './UserCard'
 import Loader from './Loader'
 import PostStats from './PostStats'
+import { useGetUserProfile } from '@/lib/react-query/queries'
 
 const TopPosts = () => {
 const navigate=useNavigate()
@@ -17,31 +18,29 @@ const {pathname}=useLocation()
   const {
   data:user,
   isLoading: isUserLoading,
-} = useGetUserPosts(currentUser.id||'');
+} = useGetUserProfile(currentUser._id||'');
  
 
 
 
   return (
     <div className='overflow-scroll custom-scrollbar px-10'>
-       <div className="w-full flex flex-col gap-2 items-center justify-center my-8">
+       <Link to={`/profile/${user?._id}`} className="w-full flex flex-col gap-2 items-center justify-center my-8">
       <img
         src={user?.imageUrl || "/assets/icons/profile-placeholder.svg"}
         alt="creator"
-        width={100}
-        height={100}
-        className="rounded-full"
+        className="rounded-full w-[6rem] h-[6rem] flex-none"
       />
       <div className="flex flex-col items-center">
         <p className="body-bold">{user?.name}</p>
         <p className=" text-light-3">@{user?.username}</p>
       </div>
-    </div>
-     <h3 className="body-bold md:h3-bold mb-4">Top posts by you</h3>
+    </Link>
+     <h3 className="body-bold mb-4">Top posts by you</h3>
     {isUserLoading ? <Loader/>: <div>
    {user?.posts?.length>0? <div className='flex flex-col flex-1 gap-8 w-full'>
      {user?.posts?.map((post:any)=>(
-  <div className='relative min-w-80 h-80' key={post.$id}><Link to={`/posts/${post.$id}`} className='grid-post_link'>
+  <div className='relative w-full' key={post.$id}><Link to={`/posts/${post?._id}`} className='grid-post_link'>
     <img src={post?.imageUrl} alt="post" className='h-full w-full object-cover' />
     </Link>
     
@@ -51,7 +50,7 @@ const {pathname}=useLocation()
     <p className='line-clamp-1'>{user?.name}</p>
     </div>
 
-    <PostStats post={post} userId={currentUser.id}/>
+    <PostStats post={post} userId={currentUser._id}/>
     </div>
     </div>
      ))}

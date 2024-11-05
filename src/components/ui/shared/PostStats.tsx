@@ -8,28 +8,31 @@ import {
 import { Models } from "appwrite";
 import { checkIsLiked } from "@/lib/utils";
 import Loader from "./Loader";
+import { useGetUserProfile, useSavePost, useToggleLike } from "@/lib/react-query/queries";
+import { useQueryClient } from "@tanstack/react-query";
 
 type PostStatsProps = {
   post?: Models.Document;
   userId: string;
 };
 const PostStats = ({ post, userId }: PostStatsProps) => {
-  const likesList = post?.likes.map((user: Models.Document) => user.$id);
-  const [likes, setLikes] = useState(likesList);
+  const initialLikes = post?.likes.map((user: Models.Document) => user._id);
+  const queryClient=useQueryClient()
+  const [likes, setLikes] = useState(initialLikes);
   const [isSaved, setIsSaved] = useState(false);
   const { mutate: likePost } = useLikePost();
-  const { mutate: savePost, isLoading: isSavingPost } = useSavedPost();
-  const { mutate: deleteSavedPost, isLoading: isDeletingSaved } =
-    useDeleteSavedPost();
+  const { mutate: savePost } = useSavePost();
 
-  const { data: currentUser } = useGetCurrentUser();
-  const savedPostRecord = currentUser?.save.find(
-    (record: Models.Document) => record.post?.$id === post?.$id
+  const { mutate: toggleLike } = useToggleLike();
+
+  const { data: user, } = useGetUserProfile(userId || "");
+  const savedPostRecord = user?.saves?.find(
+    (record: Models.Document) => record?._id === post?._id
   );
 
   useEffect(() => {
     setIsSaved(!!savedPostRecord);
-  }, [currentUser]);
+  }, [user]);
 
   const handleLikePost = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -43,19 +46,47 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
     }
 
     setLikes(newLikes);
-    likePost({ postId: post?.$id || '', likesArray: newLikes });
+    likePost({ postId: post?.$id || "", likesArray: newLikes });
   };
 
-  const handleSavePost = (e: React.MouseEvent) => {
+  // const handleSavePost = (e: React.MouseEvent) => {
+  //   e.stopPropagation();
+
+  //   if (savedPostRecord) {
+  //     setIsSaved(false);
+  //     deleteSavedPost(savedPostRecord.$id);
+  //   } else {
+  //     savePost({ postId: post?.$id || "", userId });
+  //     setIsSaved(true);
+  //   }
+  // };
+
+    const handleSavePost = (e: React.MouseEvent) => {
     e.stopPropagation();
 
+      savePost(post?._id||'',{
+      onSuccess:()=>{
+      queryClient.invalidateQueries({queryKey:['getProfileUser',userId]})
+      }
+      });
     if (savedPostRecord) {
       setIsSaved(false);
-      deleteSavedPost(savedPostRecord.$id);
     } else {
-      savePost({ postId: post?.$id || '', userId });
       setIsSaved(true);
     }
+  };
+
+
+
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent bubbling if it's inside a link or button
+
+    const hasLiked = likes.includes(userId);
+    setLikes(
+      hasLiked ? likes.filter((id: any) => id !== userId) : [...likes, userId]
+    );
+
+    toggleLike(post?._id);
   };
 
   return (
@@ -63,22 +94,19 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
       <div className="flex gap-2 mr-5">
         <img
           src={
-            checkIsLiked(likes, userId)
+            likes.includes(userId)
               ? "/assets/icons/liked.svg"
               : "/assets/icons/like.svg"
           }
           alt="like"
           width={20}
           height={20}
-          onClick={handleLikePost}
+          onClick={handleLike}
           className="cursor-pointer"
         />
         <p className="small-medium lg:base-medium">{likes.length}</p>
       </div>
       <div className="flex gap-2 mr-5">
-        {isSavingPost || isDeletingSaved ? (
-          <Loader />
-        ) : (
           <img
             src={isSaved ? "/assets/icons/saved.svg" : "/assets/icons/save.svg"}
             alt="save"
@@ -87,7 +115,6 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
             onClick={handleSavePost}
             className="cursor-pointer"
           />
-        )}
       </div>
     </div>
   );

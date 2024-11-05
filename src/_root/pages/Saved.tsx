@@ -1,5 +1,6 @@
 import Loader from "@/components/ui/shared/Loader";
 import { useUserContext } from "@/context/AuthContext";
+import { useGetUserProfile } from "@/lib/react-query/queries";
 import { useGetSavedPosts, useGetUserPosts } from "@/lib/react-query/queriesAndMutation";
 import {Tab, Tabs } from "@nextui-org/react";
 import React, { useState } from "react";
@@ -13,7 +14,7 @@ const [selected, setSelected] = useState("Posts");
   const {
   data:user,
   isLoading: isUserLoading,
-} = useGetUserPosts(currentUser.id||'');
+} = useGetUserProfile(currentUser._id||'');
 
   console.log(user);
 
@@ -89,12 +90,12 @@ const [selected, setSelected] = useState("Posts");
         <Loader />
       ) : (
       <div>
-      {user?.save?.length>0? <div className="grid-container">
-          {user?.save?.map((each:any) => (
-            <div className="relative min-w-80 h-80" key={each?.post?.$id}>
-              <Link to={`/posts/${each?.post?.$id}`} className="grid-post_link">
+      {user?.saves?.length>0? <div className="grid-container">
+          {user?.saves?.map((savedPost:any) => (
+            <div className="relative min-w-80 h-80" key={savedPost?._id}>
+              <Link to={`/posts/${savedPost?._id}`} className="grid-post_link">
                 <img
-                  src={each?.post?.imageUrl}
+                  src={savedPost?.imageUrl}
                   alt="post"
                   className="h-full w-full object-cover"
                 />

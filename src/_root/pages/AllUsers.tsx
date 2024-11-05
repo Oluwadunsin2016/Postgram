@@ -1,14 +1,20 @@
 import Loader from '@/components/ui/shared/Loader';
 import UserCard from '@/components/ui/shared/UserCard';
+import { useUserContext } from '@/context/AuthContext';
+import { useGetAllUsers } from '@/lib/react-query/queries';
 import { useGetUsers } from '@/lib/react-query/queriesAndMutation';
 import React from 'react'
 
 const AllUsers = () => {
-const {
-  data: creators,
-  isLoading: isUserLoading,
-  isError: isErrorCreators,
-} = useGetUsers(10);
+// const {
+//   data: creators,
+//   // isLoading: isUserLoading,
+//   isError: isErrorCreators,
+// } = useGetUsers(10);
+const { user } = useUserContext();
+
+const {data:users,isLoading: isUserLoading,}=useGetAllUsers()
+
 
 
   return (
@@ -29,8 +35,9 @@ const {
      </div> */}
      <div>
     {isUserLoading ? <Loader/>: <div className='grid grid-cols-2 w-full md:grid-cols-3 gap-6 my-4'>
-     {creators?.documents.map(creator=>(
- <UserCard key={creator.$id} user={creator} />  
+     {users.map((creator:any)=>(
+        user._id!==creator._id &&
+ <UserCard key={creator._id} user={creator} />
      ))}
      </div>}
     </div>

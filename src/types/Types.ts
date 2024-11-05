@@ -16,19 +16,17 @@ export type INavLink = {
 };
 
 export type IUpdateUser = {
-  id: string;
   imageUrl: string;
-  imageId: string;
   name: string;
   username: string;
   bio: string;
   email: string;
 };
 
-    export type INewPost = {
-      userId: string;
+export type INewPost = {
+  userId: string;
   caption: string;
-  file: File[];
+  file: File;
   location?: string;
   tags?: string;
 };
@@ -36,15 +34,14 @@ export type IUpdateUser = {
 export type IUpdatePost = {
   postId: string;
   caption: string;
-  imageId: string;
   imageUrl: URL;
-  file: File[];
+  file: File;
   location?: string;
   tags?: string;
 };
 
 export type IUser = {
-  id: string;
+  _id: string;
   name: string;
   username: string;
   email: string;
@@ -59,3 +56,13 @@ export type INewUser = {
   username: string;
   password: string;
 };
+
+export type Post {
+  _id: string;
+  caption: string;
+  location?: string;
+  imageUrl?: string;
+  creator?: {};
+  likes: string[]; // Assuming likes is an array of user IDs
+  // Add other fields in the post as needed
+}

@@ -1,17 +1,28 @@
 import React, { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../button'
-import { useSignOutAccount } from '@/lib/react-query/queriesAndMutation'
+// import { useSignOutAccount } from '@/lib/react-query/queriesAndMutation'
 import { useUserContext } from '@/context/AuthContext'
 
 const Topbar = () => {
-const {mutate:signOut,isSuccess }=useSignOutAccount()
 const navigate=useNavigate()
 const {user} =useUserContext()
 
-useEffect(() => {
-if (isSuccess)  navigate(0)
-}, [isSuccess])
+// useEffect(() => {
+// if (isSuccess)  navigate(0)
+// }, [isSuccess])
+
+ const handleLogout = async () => {
+     try {
+    // await axiosInstance.post('/auth/logout');
+    console.log('seen');
+    
+    localStorage.removeItem('postgramToken');
+    navigate('/sign-in');
+  } catch (error) {
+    console.error("Error logging out:", error);
+  }
+  };
 
   return (
     <section className='topbar'>
@@ -22,11 +33,11 @@ if (isSuccess)  navigate(0)
 
     <div className="flex gap-4">
     <Button variant="ghost" className='shad-button_ghost'
-    onClick={()=>signOut()}>
+    onClick={handleLogout}>
     <img src="/assets/icons/logout.svg" alt="logout" />
     </Button>
-    <Link to={`/profile/${user.id}`} className='flex items-center gap-3'>
-    <img src={user.imageUrl || '/assets/icons/profile-placeholder.svg'} alt="profile" className='h-8 w-8 rounded-full' />
+    <Link to={`/profile/${user._id}`} className='flex items-center gap-3'>
+    <img src={user.imageUrl || '/assets/icons/profile-placeholder.svg'} alt="profile" className='h-8 w-8 rounded-full flex-none' />
     </Link>
     </div>
     </div>

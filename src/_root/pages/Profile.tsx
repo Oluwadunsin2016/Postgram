@@ -2,48 +2,86 @@ import { Button } from "@/components/ui/button";
 import Loader from "@/components/ui/shared/Loader";
 import { useUserContext } from "@/context/AuthContext";
 import {
+  useFollowUser,
+  useGetUserProfile,
+  useUnfollowUser,
+} from "@/lib/react-query/queries";
+import {
   useGetSavedPosts,
   useGetUserPosts,
 } from "@/lib/react-query/queriesAndMutation";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import { Skeleton, Tab, Tabs } from "@nextui-org/react";
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useEffect, useState } from "react";
+import React, { MouseEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 const Profile = () => {
   // const { data: savedPosts, isLoading: isPostLoading } = useGetSavedPosts();
   const [selected, setSelected] = useState("Posts");
+  const [isFollowing, setIsFollowing] = useState(false);
   const { id } = useParams();
   console.log(id);
-  const queryClient=useQueryClient()
+  const queryClient = useQueryClient();
 
-  const { data: user, isLoading: isUserLoading } = useGetUserPosts(id || "");
+  const { mutateAsync: followUser,isSuccess:isFollowed } = useFollowUser();
+  const { mutateAsync: unfollowUser,isSuccess:isUnfollowed } = useUnfollowUser();
+  const { data: user, isLoading: isUserLoading } = useGetUserProfile(id || "");
   const { user: currentUser } = useUserContext();
   console.log(user);
 
+useEffect(() => {
+queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
+}, [isFollowed,isUnfollowed])
+
+
   useEffect(() => {
- queryClient.invalidateQueries({queryKey:[QUERY_KEYS.GET_USER_POSTS,id]})
-  }, [id])
-  
+    setIsFollowing(user?.followers?.includes(currentUser._id));
+  }, [currentUser, user]);
+
+  const handleFollow = async (e: MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await followUser(user._id);
+      setIsFollowing(true);
+    } catch (error) {
+      console.error("Error following user:", error);
+    }
+  };
+
+  const handleUnfollow = async (e: MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await unfollowUser(user._id);
+      setIsFollowing(false);
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+    }
+  };
+
+  useEffect(() => {
+    queryClient.invalidateQueries({
+      queryKey: [QUERY_KEYS.GET_USER_POSTS, id],
+    });
+  }, [id]);
 
   const changeSelect = (result: any) => {
     setSelected(result);
   };
 
   const formattedBio = user?.bio
-  ? user.bio.replace(/\n/g, "<br />")
-  : "No biography";
+    ? user.bio.replace(/\n/g, "<br />")
+    : "No biography";
 
   return (
-    <div className="common-container">
+    <div className="py-10 px-5 md:px-8 lg:p-14 custom-scrollbar">
       {isUserLoading ? (
         <div className="w-full flex gap-4 md:gap-8">
-          <Skeleton className="h-[6rem] w-[6rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full" />
+          <Skeleton className="h-[5rem] w-[5rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full" />
 
           <div className="w-full flex flex-col gap-2">
             <div className="flex flex-row gap-4 md:gap-8">
-              <Skeleton className="h-6 w-[80%] md:w-[20rem] rounded-lg" />
+              <Skeleton className="h-6 w-[80%] rounded-lg" />
               <div className="hidden md:flex  items-center gap-4">
                 <Skeleton className="h-[2rem] w-[4rem] rounded" />
                 <Skeleton className="h-[2rem] w-[4rem] rounded" />
@@ -51,18 +89,18 @@ const Profile = () => {
             </div>
             <Skeleton className="h-4 w-[10rem] rounded-lg" />
 
-            <ul className="my-4 flex items-center gap-10">
+            <ul className="my-4 flex items-center gap-4 md:gap-10">
               <li className="flex flex-col items-center gap-2">
-                <Skeleton className="h-5 w-[3.5rem] rounded-lg" />
-                <Skeleton className="h-5 w-[5rem] rounded-lg" />
+                <Skeleton className="h-3 w-[2.5rem] md:h-5 md:w-[3.5rem] rounded-lg" />
+                <Skeleton className="h-3 w-[3rem] md:h-5 md:w-[5rem] rounded-lg" />
               </li>
               <li className="flex flex-col items-center gap-2">
-                <Skeleton className="h-5 w-[3.5rem] rounded-lg" />
-                <Skeleton className="h-5 w-[5rem] rounded-lg" />
+                <Skeleton className="h-3 w-[2.5rem] md:h-5 md:w-[3.5rem] rounded-lg" />
+                <Skeleton className="h-3 w-[3rem] md:h-5 md:w-[5rem] rounded-lg" />
               </li>
               <li className="flex flex-col items-center gap-2">
-                <Skeleton className="h-5 w-[3.5rem] rounded-lg" />
-                <Skeleton className="h-5 w-[5rem] rounded-lg" />
+                <Skeleton className="h-3 w-[2.5rem] md:h-5 md:w-[3.5rem] rounded-lg" />
+                <Skeleton className="h-3 w-[3rem] md:h-5 md:w-[5rem] rounded-lg" />
               </li>
             </ul>
 
@@ -92,7 +130,7 @@ const Profile = () => {
         </div>
       ) : (
         <div className="w-full flex gap-4 md:gap-8">
-          <div className="h-[6rem] w-[6rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full overflow-hidden">
+          <div className="h-[5rem] w-[5rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full overflow-hidden">
             <img
               src={user?.imageUrl || "/assets/icons/profile-placeholder.svg"}
               alt="creator"
@@ -109,9 +147,9 @@ const Profile = () => {
                   @{user?.username}
                 </p>
               </div>
-              {user?.$id == currentUser.id ? (
+              {user?._id == currentUser._id ? (
                 <Link
-                  to={`/update-profile/${user?.$id}`}
+                  to={`/update-profile/${user?._id}`}
                   className="hidden md:flex bg-dark-4 px-4 rounded h-[2.5rem] text-light-1 gap-2 items-center"
                 >
                   <img
@@ -124,8 +162,15 @@ const Profile = () => {
                 </Link>
               ) : (
                 <div className="hidden md:flex  items-center gap-4">
-                  <Button className="shad-button_primary white-space-nowrap py-1">
-                    Follow
+                  <Button
+                    onClick={isFollowing ? handleUnfollow : handleFollow}
+                    className={
+                      isFollowing
+                        ? "text-dark-4 px-4 bg-light-1"
+                        : "bg-primary-500"
+                    }
+                  >
+                    {isFollowing ? "Unfollow" : "Follow"}
                   </Button>
                   <Button className="text-dark-4 px-4 bg-light-1 flex gap-2 py-1">
                     Message
@@ -134,28 +179,31 @@ const Profile = () => {
               )}
             </div>
 
-            <ul className="my-4 flex items-center gap-10">
+            <ul className="my-4 flex items-center gap-4 md:gap-10">
               <li className="flex flex-col gap-1 items-center">
-                <p className="text-primary-500">273</p>
+                <p className="text-primary-500">{user?.posts?.length}</p>
                 <p className="font-medium">Posts</p>
               </li>
               <li className="flex flex-col gap-1 items-center">
-                <p className="text-primary-500">147</p>
+                <p className="text-primary-500">{user?.followers?.length}</p>
                 <p className="font-medium">Followers</p>
               </li>
               <li className="flex flex-col gap-1 items-center">
-                <p className="text-primary-500">151</p>
+                <p className="text-primary-500">{user?.following?.length}</p>
                 <p className="font-medium">Following</p>
               </li>
             </ul>
 
             <div className="my-4 md:max-w-[70%]">
-              <p dangerouslySetInnerHTML={{ __html: formattedBio }} className=""/>
+              <p
+                dangerouslySetInnerHTML={{ __html: formattedBio }}
+                className=""
+              />
             </div>
-            {user?.$id == currentUser.id ? (
+            {user?._id == currentUser._id ? (
               <div className="flex justify-end items-end  md:hidden">
                 <Link
-                  to={`/update-profile/${user?.$id}`}
+                  to={`/update-profile/${user?._id}`}
                   className="flex bg-dark-4 px-4 rounded h-[2.5rem] text-light-1 gap-2 items-center"
                 >
                   <img
@@ -169,8 +217,15 @@ const Profile = () => {
               </div>
             ) : (
               <div className="flex md:hidden  items-center gap-4">
-                <Button className="shad-button_primary white-space-nowrap py-1">
-                  Follow
+                <Button
+                  onClick={isFollowing ? handleUnfollow : handleFollow}
+                  className={
+                    isFollowing
+                      ? "text-dark-4 px-4 bg-light-1"
+                      : "bg-primary-500"
+                  }
+                >
+                  {isFollowing ? "Unfollow" : "Follow"}
                 </Button>
                 <Button className="text-dark-4 px-4 bg-light-1 flex gap-2 py-1">
                   Message
@@ -277,12 +332,12 @@ const Profile = () => {
               <Loader />
             ) : (
               <div>
-                {user?.posts.length > 0 ? (
+                {user?.posts?.length > 0 ? (
                   <div className="grid-container">
                     {user?.posts?.map((post: any) => (
-                      <div className="relative min-w-80 h-80" key={post?.$id}>
+                      <div className="relative min-w-80 h-80" key={post?._id}>
                         <Link
-                          to={`/posts/${post?.$id}`}
+                          to={`/posts/${post?._id}`}
                           className="grid-post_link"
                         >
                           <img
