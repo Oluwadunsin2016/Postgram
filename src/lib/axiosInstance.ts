@@ -1,8 +1,9 @@
 // src/axiosInstance.js
 import axios from 'axios';
+  // baseURL: 'http://localhost:5000',
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000', // Update to match your Node server URL
+  baseURL: 'https://postgram-backend-vdty.vercel.app', // Update to match your Node server URL
   withCredentials: true, // Ensures cookies and credentials are sent with requests
 });
 

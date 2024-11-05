@@ -52,6 +52,7 @@ console.log(session);
 
 
   if (session) {
+  await checkAuthUser()
     form.reset()
     navigate('/')
   }else{

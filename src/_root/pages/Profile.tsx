@@ -74,7 +74,7 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
     : "No biography";
 
   return (
-    <div className="py-10 px-5 md:px-8 lg:p-14 custom-scrollbar">
+    <div className="common-container">
       {isUserLoading ? (
         <div className="w-full flex gap-4 md:gap-8">
           <Skeleton className="h-[5rem] w-[5rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full" />
