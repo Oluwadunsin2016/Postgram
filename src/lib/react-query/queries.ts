@@ -3,7 +3,7 @@ import { INewPost, INewUser, IUpdatePost, Post } from "@/types/Types"
 import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
 import { QUERY_KEYS } from "./queryKeys"
 import { IUpdateUser } from "@/types/Types"
-import { createPost, deletePost, getAllPosts, getPostDetails, likePost, savePost, searchPosts, updatePost } from "@/APIs/postApi"
+import { addComment, createPost, deletePost, getAllPosts, getPostDetails, likePost, savePost, searchPosts, updatePost } from "@/APIs/postApi"
 
 
 
@@ -162,3 +162,18 @@ export const useSearchPosts=(searchTerm:string)=>{
     enabled: !!searchTerm,
   });
 }
+
+
+export const useAddComment = () => {
+const queryClient=useQueryClient()
+  return useMutation(
+    {
+    mutationFn: async (payload:{postId:string,text:string}) =>await addComment(payload),
+     onSuccess:(data)=>{
+        console.log(data)
+     queryClient.invalidateQueries({queryKey:['all-posts']})
+queryClient.invalidateQueries({queryKey:['getSinglePost',data?.comment?.post]})
+}
+    }
+  );
+};

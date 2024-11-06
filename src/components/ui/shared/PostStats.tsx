@@ -81,20 +81,22 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent bubbling if it's inside a link or button
 
-    const hasLiked = likes.includes(userId);
+    const hasLiked = likes?.includes(userId);
     setLikes(
-      hasLiked ? likes.filter((id: any) => id !== userId) : [...likes, userId]
+      hasLiked ? likes?.filter((id: any) => id !== userId) : [...likes, userId]
     );
 
     toggleLike(post?._id);
   };
 
   return (
-    <div className="flex justify-between items-center z-20">
-      <div className="flex gap-2 mr-5">
+    <div className="z-20">
+    <div className="flex justify-between items-center ">
+      <div className="flex gap-4 mr-5">
+      <div className="flex items-center gap-1">
         <img
           src={
-            likes.includes(userId)
+            likes?.includes(userId)
               ? "/assets/icons/liked.svg"
               : "/assets/icons/like.svg"
           }
@@ -104,7 +106,29 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
           onClick={handleLike}
           className="cursor-pointer"
         />
-        <p className="small-medium lg:base-medium">{likes.length}</p>
+       <p className="small-medium">{likes?.length}</p>
+      </div>
+      <div className="flex items-center gap-1">
+        <img
+          src="/assets/icons/message-circle.svg"
+          alt="like"
+          width={20}
+          height={20}
+          className="cursor-pointer"
+        />
+       <p className="small-medium">{post?.comments.length}</p>
+      </div>
+      <div className="flex items-center gap-1">
+        <img
+           src="/assets/icons/share-2.svg"
+          alt="like"
+          width={20}
+          height={20}
+          className="cursor-pointer"
+        />    
+       <p className="small-medium">0</p>
+      </div>
+      
       </div>
       <div className="flex gap-2 mr-5">
           <img
@@ -116,6 +140,8 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
             className="cursor-pointer"
           />
       </div>
+    </div>
+      {/* <p className="small-medium mt-2">{likes.length<1?'No like':likes.length>1?`${likes.length} likes`:`${likes.length} like`}</p> */}
     </div>
   );
 };

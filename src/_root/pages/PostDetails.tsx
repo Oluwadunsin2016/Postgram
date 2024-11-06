@@ -14,8 +14,15 @@ import {
 import React, { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import CommentInput from '@/components/ui/shared/CommentInput'
+import Comment from '@/components/ui/shared/Comment'
 
 const PostDetails = () => {
+const [message, setMessage] = useState('');
+const [editMode, setEditMode] = useState(false);
+const [isOpen, setIsOpen] = useState(false);
+const [commentId, setCommentId] = useState(null);
+// const targetRef=useRef<HTMLDivElement>(null)
 const [isDialogOpen, setIsDialogOpen] = useState(false);
 const {user} =useUserContext()
 const {id} = useParams()
@@ -24,6 +31,7 @@ const {id} = useParams()
 const {data:post, isLoading} =useGetPostDetails(id||'')
 //  const { mutate: deletePost } = useDeletePost();
   const { mutate: deletePost } = useDeletePost();
+console.log(post);
 
   const handleDeletePost = () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
@@ -39,7 +47,7 @@ const {data:post, isLoading} =useGetPostDetails(id||'')
     <div className='post_details-card'>
 <img src={post?.imageUrl} alt="post" className='post_details-img' />
 
-       <div className="post_details-info">
+       <div className="post_details-info relative">
        <div className='flex-between w-full'>
           <Link to={`/profile/${post?.creator._id}`} className='flex items-center gap-3'>
             <img
@@ -85,19 +93,25 @@ const {data:post, isLoading} =useGetPostDetails(id||'')
          }
         </DropdownMenu>
        </div>
-       <hr className='border w-full border-dark-4/80' />
-       <div className="flex flex-col flex-1 w-full small-medium lg:base-medium pb-8">
+       <div className="flex flex-col flex-1 w-full small-medium lg:base-medium pb-8 overflow-y-auto custom-scrollbar max-h-[15rem]">
       <p>{post?.caption}</p>
       <ul className="flex gap-1 mt-2">
       {post?.tags.map((tag:string,i:any)=>(
       <li className='text-light-3' key={i}>#{tag}</li>
       ))}
       </ul>
-      </div>
+  <hr className='border w-full border-dark-4/80' />
+     <div className='flex flex-col gap-6  my-4'>
+     {post?.comments.map((comment:any)=>(
+     <Comment key={comment._id} comment={comment} />
+     ))}
+     </div>
+      </div>  
 
       <div className="w-full">
       <PostStats post={post} userId={user._id}/>
       </div>
+      <CommentInput message={message} commentId={"8779"} setMessage={setMessage} setEditMode={setEditMode} postId={post?._id} editMode={editMode}/>
         </div>
     </div>
     )}

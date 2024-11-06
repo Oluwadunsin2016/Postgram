@@ -56,3 +56,27 @@ export const multiFormatDateString = (timestamp: string = ""): string => {
 export const checkIsLiked = (likeList: string[], userId: string) => {
   return likeList?.includes(userId);
 };
+
+
+export const formatRelativeTime=(timestamp:string):string=> {
+  const now:any = new Date();
+  const time:any = new Date(timestamp);
+  const diffInSeconds = Math.floor((now - time) / 1000);
+
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds}s`;
+  }
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return diffInMinutes === 1 ? "1min" : `${diffInMinutes}mins`;
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return diffInHours === 1 ? "1h" : `${diffInHours}h`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  return diffInDays === 1 ? "1d" : `${diffInDays}d`;
+}

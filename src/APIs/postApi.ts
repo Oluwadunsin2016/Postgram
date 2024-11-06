@@ -80,3 +80,14 @@ export const searchPosts = async (searchTerm:any) => {
     return [];
   }
 };
+
+export const addComment = async (payload:any) => {
+  try {
+    const response = await axiosInstance.post(`/api/post/add-comment`,payload); 
+    return response.data;
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    return [];
+  }
+};
+

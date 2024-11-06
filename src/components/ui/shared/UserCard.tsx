@@ -4,7 +4,7 @@ import React, { MouseEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PostStats from "./PostStats";
 import { Button } from "../button";
-import { useFollowUser, useUnfollowUser } from "@/lib/react-query/queries";
+import { useFollowUser, useGetUserProfile, useUnfollowUser } from "@/lib/react-query/queries";
 
 type UserCardProps = {
   user: any;
@@ -14,11 +14,20 @@ const UserCard = ({ user }: UserCardProps) => {
   const navigate =useNavigate()
    const { user: currentUser } = useUserContext();
  const [isFollowing, setIsFollowing] = useState(false);
+ const [haveToFollow, setHaveToFollow] = useState(false);
  const {mutateAsync:followUser}=useFollowUser()
  const {mutateAsync:unfollowUser}=useUnfollowUser()
+  const { data: LoggedInUser, isLoading: isUserLoading } = useGetUserProfile(currentUser._id || "");
 
   useEffect(() => {
     setIsFollowing(user?.followers?.includes(currentUser._id));
+    if (!user?.followers?.includes(currentUser._id) && LoggedInUser?.followers?.includes(user._id)) {
+      setHaveToFollow(true)
+    }else if (user?.followers?.includes(currentUser._id) && LoggedInUser?.followers?.includes(user._id)){
+      setHaveToFollow(false)
+    }else{
+      setHaveToFollow(false)
+    }
   }, [currentUser, user]);
 
     const handleFollow = async (e: MouseEvent) => {
@@ -58,7 +67,7 @@ const UserCard = ({ user }: UserCardProps) => {
         <p className="small-regular text-light-3">@{user?.username}</p>
       </div>
       {currentUser?._id!==user?._id&& <Button onClick={isFollowing ? handleUnfollow : handleFollow} className={isFollowing?"text-dark-4 px-4 bg-light-1":"bg-primary-500"}>
-        {isFollowing ? 'Unfollow' : 'Follow'}
+        {isFollowing ? 'Unfollow' :haveToFollow?'Follow back' : 'Follow'}
       </Button>}
     </div>
   );

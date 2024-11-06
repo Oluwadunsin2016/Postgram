@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import ImageView from "@/components/ui/shared/ImageView";
 import Loader from "@/components/ui/shared/Loader";
 import { useUserContext } from "@/context/AuthContext";
 import {
@@ -20,6 +21,8 @@ const Profile = () => {
   // const { data: savedPosts, isLoading: isPostLoading } = useGetSavedPosts();
   const [selected, setSelected] = useState("Posts");
   const [isFollowing, setIsFollowing] = useState(false);
+    const [isOpen, setIsOpen] = useState(false)
+     const [haveToFollow, setHaveToFollow] = useState(false);
   const { id } = useParams();
   console.log(id);
   const queryClient = useQueryClient();
@@ -28,6 +31,7 @@ const Profile = () => {
   const { mutateAsync: unfollowUser,isSuccess:isUnfollowed } = useUnfollowUser();
   const { data: user, isLoading: isUserLoading } = useGetUserProfile(id || "");
   const { user: currentUser } = useUserContext();
+  const { data: LoggedInUser } = useGetUserProfile(currentUser._id || "");
   console.log(user);
 
 useEffect(() => {
@@ -37,6 +41,13 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
 
   useEffect(() => {
     setIsFollowing(user?.followers?.includes(currentUser._id));
+    if (!user?.followers?.includes(currentUser._id) && LoggedInUser?.followers?.includes(user._id)) {
+      setHaveToFollow(true)
+    }else if (user?.followers?.includes(currentUser._id) && LoggedInUser?.followers?.includes(user._id)){
+      setHaveToFollow(false)
+    }else{
+      setHaveToFollow(false)
+    }
   }, [currentUser, user]);
 
   const handleFollow = async (e: MouseEvent) => {
@@ -75,6 +86,7 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
 
   return (
     <div className="common-container">
+    <ImageView setIsOpen={setIsOpen} isOpen={isOpen} imageUrl={user?.imageUrl} />
       {isUserLoading ? (
         <div className="w-full flex gap-4 md:gap-8">
           <Skeleton className="h-[5rem] w-[5rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full" />
@@ -130,11 +142,13 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
         </div>
       ) : (
         <div className="w-full flex gap-4 md:gap-8">
-          <div className="h-[5rem] w-[5rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full overflow-hidden">
+          <div className="h-[5rem] w-[5rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full overflow-hidden cursor-pointer">
             <img
               src={user?.imageUrl || "/assets/icons/profile-placeholder.svg"}
               alt="creator"
               className="object-cover w-full h-full"
+              onClick={()=>setIsOpen(!isOpen)}
+              
             />
           </div>
           <div className="flex flex-col">
@@ -170,7 +184,7 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
                         : "bg-primary-500"
                     }
                   >
-                    {isFollowing ? "Unfollow" : "Follow"}
+                    {isFollowing ? 'Unfollow' :haveToFollow?'Follow back' : 'Follow'}
                   </Button>
                   <Button className="text-dark-4 px-4 bg-light-1 flex gap-2 py-1">
                     Message
@@ -225,7 +239,7 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
                       : "bg-primary-500"
                   }
                 >
-                  {isFollowing ? "Unfollow" : "Follow"}
+                  {isFollowing ? 'Unfollow' :haveToFollow?'Follow back' : 'Follow'}
                 </Button>
                 <Button className="text-dark-4 px-4 bg-light-1 flex gap-2 py-1">
                   Message
@@ -253,7 +267,7 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
         </div>
       )}
 
-      <div className="flex-between w-full max-w-5xl mb-7">
+      <div className="flex justify-center md:justify-between w-full max-w-5xl mb-7">
         <Tabs
           aria-label="options"
           selectedKey={selected}
@@ -369,11 +383,11 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
             )}
           </div>
         ) : selected == "Reels" ? (
-          <div className="h-[10rem] flex items-center justify-end">
+          <div className="h-[10rem] flex items-center justify-center">
             <p>No reel</p>
           </div>
         ) : (
-          <div className="h-[10rem] flex items-center justify-end">
+          <div className="h-[10rem] flex items-center justify-center">
             <p>No tag</p>
           </div>
         )}
