@@ -22,10 +22,11 @@ import { useCreateUser, useSignInUser } from "@/lib/react-query/queries"
 
 const SignUpForm = () => {
 const [isLocked,setIsLocked]=useState(true)
+const [isCreatingAccount, setIsCreatingAccount] = useState(false)
   const { toast } = useToast()
   const navigate =useNavigate()
   // const {mutateAsync:createUserAccount, isPending:isCreatingAccount}=useCreateUserAccount()
-  const {mutateAsync:createUserAccount, isLoading:isCreatingAccount}=useCreateUser()
+  const {mutateAsync:createUserAccount,}=useCreateUser()
   const {mutateAsync:signInUser}=useSignInUser()
 
   const {checkAuthUser}=useUserContext()
@@ -43,9 +44,11 @@ const [isLocked,setIsLocked]=useState(true)
  
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof signUpValidation>) {
+  setIsCreatingAccount(true)
   const newUser= await createUserAccount(values,{
   onError:(error:any)=>{
   toast({variant:'destructive',title:error.message,className: "bg-red border-none",})
+  setIsCreatingAccount(false)
   }
   }) 
 console.log(newUser);
@@ -54,14 +57,16 @@ console.log(newUser);
   if(!newUser) return toast({title:'Sign up failed. Please try again.'})
 
   const session = await signInUser({email:values.email,password:values.password})
-  console.log(session);
+  if(!session) return toast({title:'Sign in failed, Please try again'})
+ const isUserLoggedIn= await checkAuthUser()
 
-
-  if (session) {
+  if (isUserLoggedIn) {
+  setIsCreatingAccount(false)
     form.reset()
     navigate('/')
   }else{
   toast({title:'Sign in failed. Try again'})
+  setIsCreatingAccount(false)
   }
   }
   return (

@@ -25,9 +25,9 @@ const SignInForm = () => {
 const [isLocked,setIsLocked]=useState(true)
   const { toast } = useToast()
   const navigate =useNavigate()
-  const {mutateAsync:signInAccount}=useSignInUser()
+  const {mutateAsync:signInAccount,isLoading:isUserLoading}=useSignInUser()
 
-  const {checkAuthUser,isLoading:isUserLoading}=useUserContext()
+  const {checkAuthUser,}=useUserContext()
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof signInValidation>>({
@@ -48,11 +48,11 @@ const [isLocked,setIsLocked]=useState(true)
   })
 console.log(session);
 
-  // if(!session) return toast({title:'Sign in failed, Please try again'})
+  if(!session) return toast({title:'Sign in failed, Please try again'})
+ const isUserLoggedIn= await checkAuthUser()
 
 
-  if (session) {
-  await checkAuthUser()
+  if (isUserLoggedIn) {
     form.reset()
     navigate('/')
   }else{

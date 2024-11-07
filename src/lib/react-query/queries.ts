@@ -1,4 +1,4 @@
-import { changeProfilePhoto, followUser, getAllUsers, getUser, getUserProfile, signIn, signUp, unfollowUser, updateUser } from "@/APIs/userApi"
+import { changeProfilePhoto, followUser, getAllUsers, getUserProfile, signIn, signUp, unfollowUser, updateUser } from "@/APIs/userApi"
 import { INewPost, INewUser, IUpdatePost, Post } from "@/types/Types"
 import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
 import { QUERY_KEYS } from "./queryKeys"
@@ -17,22 +17,6 @@ return useMutation({
 mutationFn:async(user:{email:string,password:string})=>signIn(user)
 })
 }
-export const useUpdateUser=()=>{
-const queryClient=useQueryClient()
-return useMutation({
-mutationFn:(user:IUpdateUser)=>updateUser(user),
-onSuccess:()=>{
-queryClient.invalidateQueries({queryKey:[QUERY_KEYS.GET_CURRENT_USER]})
-}
-})
-}
-
-export const useGetCurrentUser=()=>{
-return useQuery({
-queryKey:[QUERY_KEYS.GET_CURRENT_USER],
-queryFn:getUser
-})
-}
 
 export const useGetUserProfile = (userId: string) => {
   return useQuery({
@@ -45,8 +29,19 @@ export const useChangeProfilePhoto=()=>{
 const queryClient=useQueryClient()
 return useMutation({
 mutationFn:({file,userId}:{file:File,userId:string})=>changeProfilePhoto(file,userId),
-onSuccess:()=>{
-queryClient.invalidateQueries({queryKey:[QUERY_KEYS.GET_CURRENT_USER]})
+onSuccess:(data)=>{
+queryClient.invalidateQueries({queryKey:['getProfileUser',data?.user._id]})
+}
+})
+}
+
+export const useUpdateUser=()=>{
+const queryClient=useQueryClient()
+return useMutation({
+mutationFn:(user:IUpdateUser)=>updateUser(user),
+onSuccess:(data)=>{
+console.log(data);
+queryClient.invalidateQueries({queryKey:['getProfileUser',data?.user._id]})
 }
 })
 }

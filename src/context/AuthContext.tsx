@@ -1,5 +1,5 @@
-import { getCurrentUser } from '@/lib/appwrite/api'
-import { useGetCurrentUser } from '@/lib/react-query/queries'
+
+import { getUser } from '@/APIs/userApi'
 import { IcontextType, IUser } from '@/types/Types'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -31,9 +31,6 @@ const [user, setUser] = useState<IUser>(INITIAL_USER)
 const [isLoading, setIsLoading] = useState(false)
 const [isAuthenticated, setIsAuthenticated] = useState(false)
 const {pathname}=useLocation()
-// const {data:currentAccount}=useGetCurrentUser()
-const {data:currentAccount}=useGetCurrentUser()
-console.log(currentAccount);
 
 
 const navigate =useNavigate()
@@ -41,7 +38,8 @@ const navigate =useNavigate()
 
 const checkAuthUser=async()=>{
 try {
-    // const currentAccount=await getCurrentUser()
+const currentAccount=await getUser()
+console.log(currentAccount);
 
     if(currentAccount){
     setUser({
@@ -77,10 +75,6 @@ if (token==='[]'||token===null ||token===undefined) {
 
 checkAuthUser()
 }, [])
-
-useEffect(() => {
-checkAuthUser()
-}, [currentAccount])
 
 
 
