@@ -31,7 +31,7 @@ const Profile = () => {
   const { mutateAsync: unfollowUser,isSuccess:isUnfollowed } = useUnfollowUser();
   const { data: user, isLoading: isUserLoading } = useGetUserProfile(id || "");
   const { user: currentUser } = useUserContext();
-  const { data: LoggedInUser } = useGetUserProfile(currentUser._id || "");
+  const { data: LoggedInUser } = useGetUserProfile(currentUser?._id || "");
   console.log(user);
 
 useEffect(() => {
@@ -40,10 +40,10 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
 
 
   useEffect(() => {
-    setIsFollowing(user?.followers?.includes(currentUser._id));
-    if (!user?.followers?.includes(currentUser._id) && LoggedInUser?.followers?.includes(user._id)) {
+    setIsFollowing(user?.followers?.includes(currentUser?._id));
+    if (!user?.followers?.includes(currentUser?._id) && LoggedInUser?.followers?.includes(user?._id)) {
       setHaveToFollow(true)
-    }else if (user?.followers?.includes(currentUser._id) && LoggedInUser?.followers?.includes(user._id)){
+    }else if (user?.followers?.includes(currentUser?._id) && LoggedInUser?.followers?.includes(user?._id)){
       setHaveToFollow(false)
     }else{
       setHaveToFollow(false)
@@ -53,7 +53,7 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
   const handleFollow = async (e: MouseEvent) => {
     e.stopPropagation();
     try {
-      await followUser(user._id);
+      await followUser(user?._id);
       setIsFollowing(true);
     } catch (error) {
       console.error("Error following user:", error);
@@ -72,7 +72,7 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
 
   useEffect(() => {
     queryClient.invalidateQueries({
-      queryKey: [QUERY_KEYS.GET_USER_POSTS, id],
+      queryKey: ['getProfileUser', id],
     });
   }, [id]);
 
