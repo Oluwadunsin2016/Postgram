@@ -289,3 +289,128 @@
     @apply flex gap-4 items-center justify-start hover:bg-transparent hover:text-white !important;
   }
 }
+
+
+/* Custom Ant Design Select Input */
+.custom-ant-select .ant-select-selector {
+  background-color: #1b202e !important;
+  border-color: #3a3f55 !important;
+  color: white !important;
+}
+
+.custom-ant-select .ant-select-arrow {
+  color: white !important;
+}
+
+
+/* Custom Ant Design Dropdown */
+.custom-ant-dropdown {
+  background-color: #1b202e !important;
+  color: white !important;
+  border: 1px solid #3a3f55 !important;
+}
+
+.custom-ant-dropdown .ant-select-item {
+  color: #cdd1e0 !important;
+}
+
+.custom-ant-dropdown .ant-select-item:hover {
+  background-color: #3a93f7 !important;
+  color: white !important;
+}
+
+.custom-ant-dropdown .ant-select-item-option-selected {
+  background-color: #297acc !important;
+  color: white !important;
+}
+
+
+/* Customize the MessageList background */
+.str-chat__list {
+  background-color: #121827 !important; /* Set the dark theme */
+  color: white !important; /* Set text color */
+}
+
+/* Customize individual messages */
+.str-chat__message {
+  color: white !important; /* Text color */
+}
+
+/* MessageInput container */
+.str-chat__input {
+  background-color: #121827 !important; /* Set dark background */
+  border: 1px solid #1e2331 !important; /* Optional: Add a border */
+  color: white !important; /* Text color */
+}
+
+/* Textarea inside the MessageInput */
+.str-chat__input textarea {
+  background-color: #121827 !important; /* Match the dark theme */
+  color: white !important; /* Text color */
+  border: none !important; /* Remove any borders */
+}
+
+/* Placeholder text inside textarea */
+.str-chat__input textarea::placeholder {
+  color: #6b7280 !important; /* Gray for placeholder text */
+}
+
+/* Buttons within the MessageInput */
+.str-chat__send-button {
+  background-color: #38393a !important; /* Match dark theme */
+margin: 0 6px !important;
+}
+
+
+/* Ensure scrollbars match the dark theme */
+.str-chat__list::-webkit-scrollbar,
+.str-chat__input-flat::-webkit-scrollbar {
+  width: 8px;
+}
+
+.str-chat__list::-webkit-scrollbar-thumb,
+.str-chat__input-flat::-webkit-scrollbar-thumb {
+  background-color: #2d3748; /* Darker scrollbar */
+  border-radius: 4px;
+}
+
+.str-chat__list::-webkit-scrollbar-track,
+.str-chat__input-flat::-webkit-scrollbar-track {
+  background-color: #121827; /* Match container */
+}
+
+.str-chat__empty-channel{
+  background-color: #121827 !important; 
+  font-size: 18px !important;
+}
+
+.str-chat__empty-channel svg{
+  width: 5rem !important;
+  height: 5rem !important;
+}
+
+.str-chat__main-panel{
+  background-color: #121827; /* Darker scrollbar */
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.str-chat__message-input{
+ background-color: transparent !important;
+}
+.str-chat__message-input textarea{
+ color: #b5b7b9 !important;
+}
+
+.str-chat{
+ background-color: transparent !important;
+ border: none !important;
+}
+
+.str-chat__message-textarea-container{
+border: 1px solid #606163 !important;
+}
+.str-chat__message-textarea-container:focus{
+border: 1px solid #2b58b1 !important;
+}
+

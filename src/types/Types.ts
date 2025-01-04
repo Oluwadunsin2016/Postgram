@@ -57,7 +57,7 @@ export type INewUser = {
   password: string;
 };
 
-export type Post {
+export type Post = {
   _id: string;
   caption: string;
   location?: string;
@@ -66,3 +66,5 @@ export type Post {
   likes: string[]; // Assuming likes is an array of user IDs
   // Add other fields in the post as needed
 }
+
+export type objectType={[key:string]:string | boolean | number|object|null|undefined}

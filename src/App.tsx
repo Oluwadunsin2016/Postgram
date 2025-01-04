@@ -6,6 +6,7 @@ import { AllUsers, CreatePost, Explore, Home, PostDetails, Profile, Saved, Updat
 import AuthLayout from './_auth/AuthLayout'
 import RootLayout from './_root/RootLayout'
 import { Toaster } from "@/components/ui/toaster";
+import Chats from './_root/pages/Chats'
 
 
 const App = () => {
@@ -27,6 +28,7 @@ const App = () => {
    <Route path='/update-post/:id' element={<UpdatePost/>} />
    <Route path='/posts/:id' element={<PostDetails/>} />
    <Route path='/profile/:id/*' element={<Profile/>} />
+   <Route path='/message/:id?' element={<Chats/>} />
    <Route path='/update-profile/:id' element={<UpdateProfile/>} />
    </Route>
    </Routes>

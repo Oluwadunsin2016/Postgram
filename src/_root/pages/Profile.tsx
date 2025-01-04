@@ -186,9 +186,9 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
                   >
                     {isFollowing ? 'Unfollow' :haveToFollow?'Follow back' : 'Follow'}
                   </Button>
-                  <Button className="text-dark-4 px-4 bg-light-1 flex gap-2 py-1">
+                  <Link to={`/message/${user?._id}`} className="text-dark-4 px-4 bg-light-1 flex gap-2 py-2 rounded-md">
                     Message
-                  </Button>
+                  </Link>
                 </div>
               )}
             </div>
@@ -241,9 +241,9 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
                 >
                   {isFollowing ? 'Unfollow' :haveToFollow?'Follow back' : 'Follow'}
                 </Button>
-                <Button className="text-dark-4 px-4 bg-light-1 flex gap-2 py-1">
+                <Link to={`/message/${user?._id}`} className="text-dark-4 px-4 bg-light-1 flex gap-2 py-2 rounded-md">
                   Message
-                </Button>
+                </Link>
               </div>
             )}
 

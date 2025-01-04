@@ -1,7 +1,7 @@
 // services/authService.ts
 
 import axiosInstance from "@/lib/axiosInstance";
-import { INewUser, IUpdateUser } from "@/types/Types";
+import { INewUser, IUpdateUser, objectType } from "@/types/Types";
 
 export interface logInUser {
   email: string;
@@ -99,6 +99,40 @@ export const followUser = async (userIdToFollow: string) => {
 export const unfollowUser = async (userIdToUnfollow: string) => {
   return axiosInstance.post('/api/user/unfollow', { userIdToUnfollow });
 };
+
+export const getToken = async (userId:string|number) => {
+  try {
+   const response= await axiosInstance.get(`api/user/get-token/${userId}`,)
+  //  console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching token:", error);
+    return null;
+  }
+};
+
+export const getAvailableUsers = async (userId:string|number) => {
+  try {
+   const response= await axiosInstance.get(`api/user/getAvailableUsers?currentUserId=${userId}`)
+  //  console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching token:", error);
+    return null;
+  }
+};
+
+export const handleOpenMessage=async(payload:{user:objectType,creator:objectType})=>{
+console.log(payload);
+try{
+const response= await axiosInstance.post('api/user/open-message',payload)
+console.log(response)
+return response
+}catch(error){
+    console.error("Error creating car:", error);
+    throw error;
+}
+}
 
 
 

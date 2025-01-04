@@ -1,5 +1,5 @@
-import { changeProfilePhoto, followUser, getAllUsers, getUserProfile, signIn, signUp, unfollowUser, updateUser } from "@/APIs/userApi"
-import { INewPost, INewUser, IUpdatePost, Post } from "@/types/Types"
+import { changeProfilePhoto, followUser, getAllUsers, getAvailableUsers, getUserProfile, handleOpenMessage, signIn, signUp, unfollowUser, updateUser } from "@/APIs/userApi"
+import { INewPost, INewUser, IUpdatePost, objectType, Post } from "@/types/Types"
 import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
 import { QUERY_KEYS } from "./queryKeys"
 import { IUpdateUser } from "@/types/Types"
@@ -74,6 +74,26 @@ queryClient.invalidateQueries({queryKey:['all-users']})
 }
     }
   );
+};
+
+
+export const useOpenMessage=()=>{
+return useMutation({
+mutationFn:async(payload:{user:objectType,creator:objectType})=>handleOpenMessage(payload)
+})
+}
+
+export const useGetAvailableUsers = (userId?: string) => {
+  return useQuery({
+    queryKey: ['getAvailableUsers', userId],
+    queryFn: async () => {
+      if (!userId) {
+        throw new Error("userId is required to fetch user cars.");
+      }
+      return getAvailableUsers(userId);
+    },
+    enabled: !!userId,
+  });
 };
 
 
