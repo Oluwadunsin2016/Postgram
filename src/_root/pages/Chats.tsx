@@ -63,7 +63,7 @@ useEffect(() => {
     return;
   }
 
-  const creator = availableUsers.find(
+  const creator = availableUsers?.find(
     (creator: { [key: string]: string }) => creator?._id === creatorId
   );
   console.log("Creator found:", creator);
