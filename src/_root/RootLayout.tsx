@@ -13,7 +13,8 @@ const show = pathname=='/'|| pathname=='/create-post'||  pathname.includes('/upd
     <div className='w-full md:flex'>
     <Topbar/>
     <LeftSidebar/>
-    <section className='flex flex-1 min-h-screen'>
+    {/* <section className={`flex flex-1 min-h-screen ${show?'md:max-w-[50%]':'md:max-w-[80%]'}`}> */}
+    <section className='flex flex-1 min-h-screen md:max-w-[80%]'>
     <Outlet/>
     </section>
     {show&&<RightSidebar/>}

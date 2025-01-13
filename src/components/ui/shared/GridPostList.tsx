@@ -8,13 +8,15 @@ type GridPostListProps= {
 posts:Models.Document[];
 showUser?:boolean;
 showStats?:boolean;
+postId?:string|number;
 }
-const GridPostList = ({posts, showUser=true, showStats=true}:GridPostListProps) => {
+const GridPostList = ({postId,posts, showUser=true, showStats=true}:GridPostListProps) => {
 
 const {user}=useUserContext()
   return (
     <ul className='grid-container'>
     {posts.map((post)=>(
+    postId!==post._id &&
     <li className='relative h-80' key={post._id}><Link to={`/posts/${post._id}`} className='grid-post_link'>
     <img src={post?.imageUrl} alt="post" className='h-full w-full object-cover' />
     </Link>

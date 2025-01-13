@@ -4,6 +4,7 @@ import Loader from "@/components/ui/shared/Loader";
 import { useUserContext } from "@/context/AuthContext";
 import {
   useFollowUser,
+  useGetAllUsers,
   useGetUserProfile,
   useUnfollowUser,
 } from "@/lib/react-query/queries";
@@ -14,7 +15,7 @@ import {
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import { Skeleton, Tab, Tabs } from "@nextui-org/react";
 import { useQueryClient } from "@tanstack/react-query";
-import React, { MouseEvent, useEffect, useState } from "react";
+import React, { MouseEvent, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 const Profile = () => {
@@ -23,16 +24,20 @@ const Profile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
     const [isOpen, setIsOpen] = useState(false)
      const [haveToFollow, setHaveToFollow] = useState(false);
+       const [showScrollLeft, setShowScrollLeft] = useState(false);
+  const [showScrollRight, setShowScrollRight] = useState(false);
   const { id } = useParams();
   console.log(id);
   const queryClient = useQueryClient();
 
+const {data:users,isLoading: isUsersLoading,}=useGetAllUsers()
   const { mutateAsync: followUser,isSuccess:isFollowed } = useFollowUser();
   const { mutateAsync: unfollowUser,isSuccess:isUnfollowed } = useUnfollowUser();
   const { data: user, isLoading: isUserLoading } = useGetUserProfile(id || "");
   const { user: currentUser } = useUserContext();
   const { data: LoggedInUser } = useGetUserProfile(currentUser?._id || "");
   console.log(user);
+    const containerRef = useRef<HTMLDivElement>(null);
 
 useEffect(() => {
 queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
@@ -80,6 +85,50 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
     setSelected(result);
   };
 
+      const scrollLeft = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollBy({
+        left: -100, // Adjust the scroll amount as needed
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const scrollRight = () => {
+    if (containerRef.current) {
+      containerRef.current.scrollBy({
+        left: 100, // Adjust the scroll amount as needed
+        behavior: "smooth",
+      });
+    }
+  };
+
+    const checkOverflow = () => {
+    if (containerRef.current) {
+      const { scrollWidth, clientWidth, scrollLeft } = containerRef.current;
+      setShowScrollLeft(scrollLeft > 0);
+      setShowScrollRight(scrollLeft + clientWidth < scrollWidth);
+    }
+  };
+
+  useEffect(() => {
+    checkOverflow(); // Initial check
+
+    // Attach a scroll event listener
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener("scroll", checkOverflow);
+      window.addEventListener("resize", checkOverflow); // Recheck on window resize
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener("scroll", checkOverflow);
+      }
+      window.removeEventListener("resize", checkOverflow);
+    };
+  }, [users]);
+
   const formattedBio = user?.bio
     ? user.bio.replace(/\n/g, "<br />")
     : "No biography";
@@ -126,17 +175,6 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
             <div className="flex md:hidden  items-center gap-4">
               <Skeleton className="h-[2rem] w-[4rem] rounded" />
               <Skeleton className="h-[2rem] w-[4rem] rounded" />
-            </div>
-
-            <div className="flex gap-4 items-center my-4">
-              {Array(4)
-                .fill("box")
-                .map((_, id) => (
-                  <Skeleton
-                    key={id}
-                    className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] flex-none rounded-full"
-                  />
-                ))}
             </div>
           </div>
         </div>
@@ -247,25 +285,100 @@ queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
               </div>
             )}
 
-            <div className="flex gap-4 items-center my-4">
-              {Array(4)
-                .fill("box")
-                .map((item, id) => (
-                  <div
-                    key={id}
-                    className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-                  >
-                    <img
-                      src="/assets/images/profile.png"
-                      alt="creator"
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                ))}
-            </div>
           </div>
         </div>
       )}
+
+      
+            <div className="relative">
+    {showScrollLeft &&  <button
+        className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 shadow-lg rounded-full p-2"
+        onClick={scrollLeft}
+      >
+          <img
+            src="/assets/icons/chevron-left.svg"
+            width={20}
+            height={20}
+            alt="add" 
+          />
+      </button>}
+   {isUsersLoading? 
+            <div className="flex gap-4 items-center justify-center my-4">
+              {Array(4)
+                .fill("box")
+                .map((_, id) => (
+                  <Skeleton
+                    key={id}
+                    className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] flex-none rounded-full"
+                  />
+                ))}
+            </div> : <div
+        ref={containerRef}
+        className="flex gap-4 items-center justify-center my-4 overflow-x-auto scrollbar-hide"
+      >
+        {users?.map((creator:any) => (
+          <div
+            key={creator._id}
+            className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
+          >
+            <img
+              src={creator?.imageUrl || "/assets/images/profile.png"}
+              alt="creator"
+              className="object-cover w-full h-full"
+            />
+          </div>
+        ))}
+        {users?.map((creator:any) => (
+          <div
+            key={creator._id}
+            className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
+          >
+            <img
+              src={creator?.imageUrl || "/assets/images/profile.png"}
+              alt="creator"
+              className="object-cover w-full h-full"
+            />
+          </div>
+        ))}
+        {users?.map((creator:any) => (
+          <div
+            key={creator._id}
+            className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
+          >
+            <img
+              src={creator?.imageUrl || "/assets/images/profile.png"}
+              alt="creator"
+              className="object-cover w-full h-full"
+            />
+          </div>
+        ))}
+        {users?.map((creator:any) => (
+          <div
+            key={creator._id}
+            className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
+          >
+            <img
+              src={creator?.imageUrl || "/assets/images/profile.png"}
+              alt="creator"
+              className="object-cover w-full h-full"
+            />
+          </div>
+        ))}
+      </div>}
+
+      {/* Right Scroll Icon */}
+    {showScrollRight &&  <button
+        className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 shadow-lg rounded-full p-2"
+        onClick={scrollRight}
+      >
+        <img
+            src="/assets/icons/chevron-right.svg"
+            width={20}
+            height={20}
+            alt="add" 
+          />
+      </button>}
+    </div>
 
       <div className="flex justify-center md:justify-between w-full max-w-5xl mb-7">
         <Tabs

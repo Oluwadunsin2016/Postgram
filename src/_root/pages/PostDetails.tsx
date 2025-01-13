@@ -16,6 +16,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import CommentInput from '@/components/ui/shared/CommentInput'
 import Comment from '@/components/ui/shared/Comment'
+import RelatedPosts from '@/components/ui/shared/RelatedPosts'
 
 const PostDetails = () => {
 const [message, setMessage] = useState('');
@@ -44,6 +45,7 @@ console.log(post);
   return (
     <div className='post_details-container'>
     {isLoading? <Loader/>:(
+    <div>
     <div className='post_details-card'>
 <img src={post?.imageUrl} alt="post" className='post_details-img' />
 
@@ -114,7 +116,12 @@ console.log(post);
       <CommentInput message={message} commentId={"8779"} setMessage={setMessage} setEditMode={setEditMode} postId={post?._id} editMode={editMode}/>
         </div>
     </div>
+
+     <RelatedPosts postId={post?._id} />
+    </div>
     )}
+
+   
          <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
   <AlertDialogContent className='bg-slate-800 border-none'>
     <AlertDialogHeader>
