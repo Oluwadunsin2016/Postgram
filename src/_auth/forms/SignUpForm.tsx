@@ -18,6 +18,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
 import { useUserContext } from "@/context/AuthContext"
 import { useCreateUser, useSignInUser } from "@/lib/react-query/queries"
+import { Spinner } from "@nextui-org/react"
  
 
 const SignUpForm = () => {
@@ -138,7 +139,7 @@ console.log(newUser);
         <Button type="submit" className="shad-button_primary mt-4">
         {isCreatingAccount ? (<div className="flex flex-center gap-2">
         
-        <Loader/> Loading...
+          <Spinner size='sm' color="white" /> Loading...
         </div>):"Sign Up"}
         </Button>
 

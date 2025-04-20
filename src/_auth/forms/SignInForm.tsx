@@ -19,6 +19,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { useToast } from "@/hooks/use-toast"
 import { useUserContext } from "@/context/AuthContext"
 import { useSignInUser } from '@/lib/react-query/queries'
+import { Spinner } from '@nextui-org/react'
  
 
 const SignInForm = () => {
@@ -104,7 +105,7 @@ console.log(session);
         <Button type="submit" className="shad-button_primary mt-4">
         {isUserLoading ? (<div className="flex flex-center gap-2">
         
-        <Loader/> Loading...
+          <Spinner size='sm' color="white" /> Loading...
         </div>):"Sign In"}
         </Button>
 

@@ -7,6 +7,7 @@ import AuthLayout from './_auth/AuthLayout'
 import RootLayout from './_root/RootLayout'
 import { Toaster } from "@/components/ui/toaster";
 import Chats from './_root/pages/Chats'
+import NotFoundPage from './_root/pages/NotFoundPage'
 
 
 const App = () => {
@@ -31,6 +32,7 @@ const App = () => {
    <Route path='/message/:id?' element={<Chats/>} />
    <Route path='/update-profile/:id' element={<UpdateProfile/>} />
    </Route>
+   <Route path='*' element={<NotFoundPage/>} />
    </Routes>
     <Toaster />
     </main>

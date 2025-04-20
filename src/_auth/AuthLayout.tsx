@@ -1,12 +1,16 @@
+import NetworkErrorPage from '@/_root/pages/NetworkErrorPage'
+import { useUserContext } from '@/context/AuthContext'
 import React from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 
 
 const AuthLayout = () => {
-const isAuthenticated=false
+const {isAuthenticated,internetError}=useUserContext()
+if (internetError) return <NetworkErrorPage/>
   return (
     <>
-    {isAuthenticated?<Navigate to='/'/>:<>
+    {/* {isAuthenticated?<Navigate to='/'/>: */}
+    <>
     <section className='flex flex-1 h-screen justify-center items-center flex-col py-10 overflow-y-auto custom-scrollbar'>
     <Outlet/>
     </section>
@@ -17,7 +21,7 @@ const isAuthenticated=false
 </div>
     </>
     
-    }
+    
     </>
   )
 }

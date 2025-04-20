@@ -39,9 +39,19 @@ export const getUser = async () => {
     const response = await axiosInstance.get('/api/user/get-user');
     return response.data?.user;
   } catch (error: any) {
-    throw new Error(error.response?.data?.error || 'Error getting user');
+    // Axios-specific logic
+    if (error.message === 'Network Error') {
+      throw new Error('network'); // 👈 custom tag for network error
+    }
+
+    if (error.response?.status === 403) {
+      throw new Error('unauthenticated'); // 👈 custom tag for auth error
+    }
+
+    throw new Error('other');
   }
 };
+
 export const getAllUsers = async () => {
   try {
     const response = await axiosInstance.get('/api/user/get-users');
@@ -58,7 +68,6 @@ export const getAllUsers = async () => {
 export const getUserProfile= async (userId: string) => {
   try {
     const response = await axiosInstance.get(`/api/user/get-profile/${userId}`);
-    
     return response.data?.user ;
   } catch (error: any) {
     throw new Error(error.response?.data?.error || 'Error getting user profile');

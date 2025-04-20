@@ -8,7 +8,7 @@ import { INavLink } from '@/types'
 const LeftSidebar = () => {
 const navigate=useNavigate()
 const {pathname}=useLocation()
-const {user} = useUserContext()
+const {user,checkAuthUser} = useUserContext()
 console.log(user);
 
 
@@ -18,12 +18,17 @@ console.log(user);
 
 
   const handleLogout = async () => {
-     try {
-    // await axiosInstance.post('/auth/logout');
-    console.log('seen');
-    
     localStorage.removeItem('postgramToken');
-    navigate('/sign-in');
+    console.log('seen');
+     try {
+       const token=localStorage.getItem('postgramToken')
+       console.log(token);
+
+if (token==='[]'||token===null ||token===undefined) {
+  await checkAuthUser()
+    navigate('/sign-in')
+    console.log('executed');
+}
   } catch (error) {
     console.error("Error logging out:", error);
   }

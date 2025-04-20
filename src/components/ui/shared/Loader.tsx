@@ -1,9 +1,12 @@
-import React from 'react'
+
+import { CgSpinnerTwo } from "react-icons/cg";
+
+
 
 const Loader = () => {
   return (
     <div className='flex flex-center h-screen justify-center'>
-    <img src="/assets/icons/loader.svg" alt="loader" height={24} width={24} />
+    <CgSpinnerTwo size={40} className='animate-spin text-indigo-600' />
     </div>
   )
 }

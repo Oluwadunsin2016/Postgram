@@ -21,6 +21,8 @@ isAuthenticated:false,
 setUser:()=>{},
 setIsAuthenticated:()=>{},
 checkAuthUser:async()=>false as boolean,
+internetError: null as string | null,   
+setInternetError: () => {},  
 }
 
 const AuthContext=createContext<IcontextType>(INITIAL_STATE)
@@ -28,7 +30,8 @@ const AuthContext=createContext<IcontextType>(INITIAL_STATE)
 
 const AuthProvider = ({children}:{children:React.ReactNode}) => {
 const [user, setUser] = useState<IUser>(INITIAL_USER)
-const [isLoading, setIsLoading] = useState(false)
+const [internetError, setInternetError] = useState<string | null>(null);
+const [isLoading, setIsLoading] = useState(true)
 const [isAuthenticated, setIsAuthenticated] = useState(false)
 const {pathname}=useLocation()
 
@@ -53,11 +56,20 @@ console.log(currentAccount);
 
     setIsAuthenticated(true)
     return true
+  }else{
+    setUser(INITIAL_USER)
+      setIsAuthenticated(false)
     }
 
     return false
-} catch (error) {
-    console.log(error)
+} catch (error:any) {
+  console.log('❌ checkAuthUser error:', error?.message);
+  if (error.message === 'network') {
+    setInternetError('network'); // 🌐 trigger no-internet page
+  } else if (error.message === 'unauthenticated') {
+    setInternetError(null); // 🔐 redirect to login
+    setIsAuthenticated(false);
+  }
     return false
 } finally{
 setIsLoading(false)
@@ -66,6 +78,8 @@ setIsLoading(false)
 
 useEffect(() => {
 const token=localStorage.getItem('postgramToken')
+console.log(token);
+
 
 if (token==='[]'||token===null ||token===undefined) {
     navigate('/sign-in')
@@ -84,7 +98,9 @@ isLoading,
 isAuthenticated,
 setUser,
 setIsAuthenticated,
-checkAuthUser
+checkAuthUser,
+setInternetError,
+internetError
 }
   return (
     <AuthContext.Provider value={value} >
