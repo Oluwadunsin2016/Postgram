@@ -19,16 +19,9 @@ console.log(user);
 
   const handleLogout = async () => {
     localStorage.removeItem('postgramToken');
-    console.log('seen');
      try {
-       const token=localStorage.getItem('postgramToken')
-       console.log(token);
-
-if (token==='[]'||token===null ||token===undefined) {
-  await checkAuthUser()
-    navigate('/sign-in')
-    console.log('executed');
-}
+      await checkAuthUser()
+      navigate('/sign-in')
   } catch (error) {
     console.error("Error logging out:", error);
   }

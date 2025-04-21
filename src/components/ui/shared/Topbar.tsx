@@ -6,23 +6,21 @@ import { useUserContext } from '@/context/AuthContext'
 
 const Topbar = () => {
 const navigate=useNavigate()
-const {user} =useUserContext()
+const {user,checkAuthUser} =useUserContext()
 
 // useEffect(() => {
 // if (isSuccess)  navigate(0)
 // }, [isSuccess])
 
- const handleLogout = async () => {
-     try {
-    // await axiosInstance.post('/auth/logout');
-    console.log('seen');
-    
-    localStorage.removeItem('postgramToken');
-    navigate('/sign-in');
-  } catch (error) {
-    console.error("Error logging out:", error);
-  }
-  };
+const handleLogout = async () => {
+  localStorage.removeItem('postgramToken');
+   try {
+    await checkAuthUser()
+    navigate('/sign-in')
+} catch (error) {
+  console.error("Error logging out:", error);
+}
+};
 
   return (
     <section className='topbar'>
