@@ -17,7 +17,7 @@ if (internetError) return <NetworkErrorPage/>
 
        <div className="relative h-screen w-1/2 hidden xl:block">
   <img src="/assets/images/nature.jpg" alt="logo" className="h-full w-full object-cover" />
-  <div className="absolute inset-0 bg-gradient-to-r from-black to-transparent"></div>
+  <div className="absolute inset-0 bg-gradient-to-r from-gray-950 to-transparent"></div>
 </div>
     </>
     
