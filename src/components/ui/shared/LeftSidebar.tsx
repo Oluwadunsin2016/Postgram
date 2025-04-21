@@ -28,7 +28,7 @@ console.log(user);
   };
 
   return (
-    <nav className='leftsidebar !bg-gray-900'>
+    <nav className='leftsidebar'>
     <div className='flex flex-col gap-5'>
        <Link to='/' className='flex gap-3 items-center'>
     <img src="/assets/images/Logo-removebg-preview.png" alt="logo" height={60} width={250} />
