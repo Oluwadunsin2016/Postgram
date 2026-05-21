@@ -1,7 +1,7 @@
 
 import { getUser } from '@/APIs/userApi'
 import { IcontextType, IUser } from '@/types/Types'
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 
@@ -37,12 +37,26 @@ const {pathname}=useLocation()
 
 
 const navigate =useNavigate()
+const publicRoutes = useMemo(() => ['/sign-in', '/sign-up', '/forgot-password'], []);
+const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/reset-password/');
 
+const getValidToken = () => {
+const token=localStorage.getItem('postgramToken')
+return token && token !== '[]' && token !== 'null' && token !== 'undefined' ? token : null
+}
 
-const checkAuthUser=async()=>{
+const checkAuthUser=useCallback(async()=>{
+const token = getValidToken()
+if (!token) {
+  setUser(INITIAL_USER)
+  setIsAuthenticated(false)
+  setIsLoading(false)
+  return false
+}
+
 try {
+setIsLoading(true)
 const currentAccount=await getUser()
-console.log(currentAccount);
 
     if(currentAccount){
     setUser({
@@ -55,6 +69,7 @@ console.log(currentAccount);
     })
 
     setIsAuthenticated(true)
+    setInternetError(null)
     return true
   }else{
     setUser(INITIAL_USER)
@@ -63,32 +78,74 @@ console.log(currentAccount);
 
     return false
 } catch (error:any) {
-  console.log('❌ checkAuthUser error:', error?.message);
   if (error.message === 'network') {
-    setInternetError('network'); // 🌐 trigger no-internet page
+    setInternetError('network');
   } else if (error.message === 'unauthenticated') {
-    setInternetError(null); // 🔐 redirect to login
+    localStorage.removeItem('postgramToken')
+    setUser(INITIAL_USER)
+    setInternetError(null);
     setIsAuthenticated(false);
+  } else {
+    setUser(INITIAL_USER)
+    setIsAuthenticated(false)
   }
     return false
 } finally{
 setIsLoading(false)
 }
-}
+}, [])
 
 useEffect(() => {
-const token=localStorage.getItem('postgramToken')
-console.log(token);
-
-
-if (token==='[]'||token===null ||token===undefined) {
-    navigate('/sign-in')
-}else if (token && pathname=='/sign-in'||pathname=='/sign-up') {
-    navigate('/')
+const handleOffline = () => {
+  setInternetError('network')
+  setIsLoading(false)
 }
 
-checkAuthUser()
-}, [])
+const handleOnline = () => {
+  setInternetError(null)
+  if (getValidToken()) checkAuthUser()
+}
+
+const handleNetworkError = () => setInternetError('network')
+const handleNetworkRestored = () => {
+  if (navigator.onLine) setInternetError(null)
+}
+
+window.addEventListener('offline', handleOffline)
+window.addEventListener('online', handleOnline)
+window.addEventListener('postgram:network-error', handleNetworkError)
+window.addEventListener('postgram:network-restored', handleNetworkRestored)
+
+return () => {
+  window.removeEventListener('offline', handleOffline)
+  window.removeEventListener('online', handleOnline)
+  window.removeEventListener('postgram:network-error', handleNetworkError)
+  window.removeEventListener('postgram:network-restored', handleNetworkRestored)
+}
+}, [checkAuthUser])
+
+useEffect(() => {
+const token=getValidToken()
+
+if (!navigator.onLine) {
+  setInternetError('network')
+  setIsLoading(false)
+  return
+}
+
+if (!token) {
+    setUser(INITIAL_USER)
+    setIsAuthenticated(false)
+    setIsLoading(false)
+    if (!isPublicRoute) navigate('/sign-in', { replace: true })
+    return
+}
+
+checkAuthUser().then((isLoggedIn) => {
+  if (isLoggedIn && isPublicRoute) navigate('/', { replace: true })
+  if (!isLoggedIn && !isPublicRoute && !getValidToken()) navigate('/sign-in', { replace: true })
+})
+}, [checkAuthUser, isPublicRoute, navigate, pathname])
 
 
 

@@ -3,15 +3,17 @@ import { INewPost, IUpdatePost } from "@/types/Types";
 
 export const createPost = async (postData: INewPost): Promise<string> => {
   try {
-  const tags = postData.tags?.replace(/ /g, "").split(",") || [];
+  const tags = postData.tags?.replace(/ /g, "").split(",").filter(Boolean).join(",") || "";
    const formData = new FormData();
-    formData.append('file', postData.file); 
+    const files = postData.files || (postData.file ? (Array.isArray(postData.file) ? postData.file : [postData.file]) : []);
+    files.forEach((file) => formData.append('files', file));
     formData.append('userId', postData.userId); 
-    formData.append('caption', postData.caption); 
+    formData.append('caption', postData.caption || ''); 
     formData.append('location', postData.location??''); 
     formData.append('tags', tags); 
+    formData.append('taggedUsers', JSON.stringify(postData.taggedUsers || [])); 
+    if (postData.repostOf) formData.append('repostOf', postData.repostOf);
     const response = await axiosInstance.post('/api/post/create', formData);
-    console.log(response);
     return response.data.message; 
   } catch (error: any) {
     throw new Error(error.response?.data?.error || 'Error signing up');
@@ -19,14 +21,16 @@ export const createPost = async (postData: INewPost): Promise<string> => {
 };
 export const updatePost = async (postData: IUpdatePost): Promise<string> => {
   try {
-  const tags = postData.tags?.replace(/ /g, "").split(",") || [];
+  const tags = postData.tags?.replace(/ /g, "").split(",").filter(Boolean).join(",") || "";
    const formData = new FormData();
-    formData.append('file', postData.file); 
-    formData.append('caption', postData.caption); 
+    const files = postData.files || (postData.file ? (Array.isArray(postData.file) ? postData.file : [postData.file]) : []);
+    files.forEach((file) => formData.append('files', file));
+    if (postData.existingMedia) formData.append('existingMedia', JSON.stringify(postData.existingMedia));
+    formData.append('caption', postData.caption || ''); 
     formData.append('location', postData.location??''); 
     formData.append('tags', tags); 
+    formData.append('taggedUsers', JSON.stringify(postData.taggedUsers || [])); 
     const response = await axiosInstance.put(`/api/post/update/${postData.postId}`, formData);
-    console.log(response);
     return response.data.message; 
   } catch (error: any) {
     throw new Error(error.response?.data?.error || 'Error signing up');
@@ -37,35 +41,36 @@ export const getAllPosts = async ({ pageParam = 1 }) => {
   const response = await axiosInstance.get(`/api/post/get-posts`, {
     params: { page: pageParam, limit: 10 },
   });
-  console.log(response);
   
   return response.data;
 };
 
 export const getPostDetails=async(postId:string)=>{
 const response=await axiosInstance.get(`/api/post/details/${postId}`)
-console.log(response);
 
 return response.data;
 }
 
 export const deletePost=async(postId:string)=>{
 const response=await axiosInstance.delete(`/api/post/delete/${postId}`)
-console.log(response);
 
 return response.data;
 }
 
 export const likePost=async(postId:string)=>{
 const response=await axiosInstance.patch(`/api/post/like/${postId}`)
-console.log(response);
 
 return response.data;
 }
 
 export const savePost=async(postId:string)=>{
 const response=await axiosInstance.patch(`/api/post/save-post/${postId}`)
-console.log(response);
+
+return response.data;
+}
+
+export const repostPost=async({postId, caption = ""}:{postId:string; caption?:string})=>{
+const response=await axiosInstance.post(`/api/post/${postId}/repost`, { caption })
 
 return response.data;
 }
@@ -91,3 +96,17 @@ export const addComment = async (payload:any) => {
   }
 };
 
+export const likeComment = async (commentId:string) => {
+  const response = await axiosInstance.patch(`/api/post/comments/${commentId}/like`);
+  return response.data;
+};
+
+export const updateComment = async ({ commentId, text }:{commentId:string; text:string}) => {
+  const response = await axiosInstance.patch(`/api/post/comments/${commentId}`, { text });
+  return response.data;
+};
+
+export const deleteComment = async (commentId:string) => {
+  const response = await axiosInstance.delete(`/api/post/comments/${commentId}`);
+  return response.data;
+};

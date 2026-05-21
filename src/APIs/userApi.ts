@@ -28,9 +28,36 @@ export const signIn = async (userData: logInUser): Promise<SigninResponse> => {
     localStorage.setItem('postgramToken', response.data.token); // Save token for future requests
     return response.data.token;
   } catch (error: any) {
-    console.log(error.response?.data?.error);
     
     throw new Error(error.response?.data?.error || 'Error signing in');
+  }
+};
+
+export const forgotPassword = async (email: string) => {
+  try {
+    const response = await axiosInstance.post('/api/user/forgot-password', { email });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Error requesting password reset');
+  }
+};
+
+export const resetPassword = async ({ token, password }: { token: string; password: string }) => {
+  try {
+    const response = await axiosInstance.patch(`/api/user/reset-password/${token}`, { password });
+    localStorage.setItem('postgramToken', response.data.token);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Error resetting password');
+  }
+};
+
+export const changePassword = async (payload: { currentPassword: string; newPassword: string }) => {
+  try {
+    const response = await axiosInstance.patch('/api/user/change-password', payload);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Error changing password');
   }
 };
 
@@ -39,13 +66,12 @@ export const getUser = async () => {
     const response = await axiosInstance.get('/api/user/get-user');
     return response.data?.user;
   } catch (error: any) {
-    // Axios-specific logic
-    if (error.message === 'Network Error') {
-      throw new Error('network'); // 👈 custom tag for network error
+    if (!error.response || error.message === 'Network Error') {
+      throw new Error('network');
     }
 
-    if (error.response?.status === 403) {
-      throw new Error('unauthenticated'); // 👈 custom tag for auth error
+    if ([401, 403].includes(error.response?.status)) {
+      throw new Error('unauthenticated');
     }
 
     throw new Error('other');
@@ -55,7 +81,6 @@ export const getUser = async () => {
 export const getAllUsers = async () => {
   try {
     const response = await axiosInstance.get('/api/user/get-users');
-    console.log(response);
     
     return response.data?.users;
   } catch (error: any) {
@@ -82,10 +107,22 @@ export const changeProfilePhoto= async (file:File,userId: string) => {
     const response = await axiosInstance.put(`/api/user/${userId}/profile-image`,formData,{ headers: {
         'Content-Type': 'multipart/form-data',
       },});
-    console.log(response);
     return response.data ;
   } catch (error: any) {
     throw new Error(error.response?.data?.error || 'Error updating profile image');
+  }
+};
+
+export const changeCoverPhoto= async (file:File,userId: string) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axiosInstance.put(`/api/user/${userId}/cover-image`,formData,{ headers: {
+        'Content-Type': 'multipart/form-data',
+      },});
+    return response.data ;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Error updating cover image');
   }
 };
 
@@ -93,7 +130,6 @@ export const changeProfilePhoto= async (file:File,userId: string) => {
 export const updateUser= async (user: IUpdateUser) => {
   try {
   const response = await axiosInstance.put('/api/user/update-user', user);
-  console.log(response.data);
   
     return response.data; 
   } catch (error: any) {
@@ -112,7 +148,6 @@ export const unfollowUser = async (userIdToUnfollow: string) => {
 export const getToken = async (userId:string|number) => {
   try {
    const response= await axiosInstance.get(`api/user/get-token/${userId}`,)
-  //  console.log(response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching token:", error);
@@ -123,7 +158,6 @@ export const getToken = async (userId:string|number) => {
 export const getAvailableUsers = async (userId:string|number) => {
   try {
    const response= await axiosInstance.get(`api/user/getAvailableUsers?currentUserId=${userId}`)
-  //  console.log(response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching token:", error);
@@ -132,16 +166,10 @@ export const getAvailableUsers = async (userId:string|number) => {
 };
 
 export const handleOpenMessage=async(payload:{user:objectType,creator:objectType})=>{
-console.log(payload);
-try{
-const response= await axiosInstance.post('api/user/open-message',payload)
-console.log(response)
-return response
-}catch(error){
-    console.error("Error creating car:", error);
-    throw error;
-}
-}
-
-
-
+  try {
+    const response = await axiosInstance.post('/api/user/open-message', payload);
+    return response;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || 'Error opening conversation');
+  }
+};

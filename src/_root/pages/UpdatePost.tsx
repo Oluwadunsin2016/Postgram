@@ -1,17 +1,13 @@
 import PostForm from "@/components/forms/PostForm";
 import Loader from "@/components/ui/shared/Loader";
 import { useGetPostDetails } from "@/lib/react-query/queries";
-import { useGetPostById } from "@/lib/react-query/queriesAndMutation";
-import React from "react";
 import { useParams } from "react-router-dom";
 
 const UpdatePost = () => {
 const {id} =useParams()
-console.log(id);
 
 
 const {data:post, isLoading}=useGetPostDetails(id||'')
-console.log(post);
 
 if (isLoading) return <Loader/>
   return (

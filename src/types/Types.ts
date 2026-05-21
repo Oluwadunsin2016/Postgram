@@ -18,28 +18,35 @@ export type INavLink = {
 };
 
 export type IUpdateUser = {
-  imageUrl: string;
+  imageUrl?: string;
   name: string;
   username: string;
   bio: string;
   email: string;
+  location?: string;
 };
 
 export type INewPost = {
   userId: string;
-  caption: string;
-  file: File;
+  caption?: string;
+  file?: File | File[];
+  files?: File[];
   location?: string;
   tags?: string;
+  taggedUsers?: string[];
+  repostOf?: string;
 };
 
 export type IUpdatePost = {
   postId: string;
-  caption: string;
-  imageUrl: URL;
-  file: File;
+  caption?: string;
+  imageUrl?: URL | string;
+  file?: File | File[];
+  files?: File[];
+  existingMedia?: { url: string; publicId?: string; type?: "image" | "video"; name?: string }[];
   location?: string;
   tags?: string;
+  taggedUsers?: string[];
 };
 
 export type IUser = {
@@ -48,7 +55,9 @@ export type IUser = {
   username: string;
   email: string;
   imageUrl: string;
+  coverImageUrl?: string;
   imageId?: string;
+  location?: string;
   bio: string;
 };
 

@@ -1,25 +1,27 @@
-import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { AlertDialog, AlertDialogContent, AlertDialogOverlay } from '../alert-dialog';
 
 type ViewProps={
-imageUrl:string;
+imageUrl?:string;
 isOpen:boolean;
 setIsOpen:(item:boolean)=>void
 }
 
 const ImageView = ({ imageUrl,isOpen,setIsOpen }:ViewProps) => {
+  const displayImage = imageUrl || "/assets/images/default_user_image.png";
 
   return (
     <>
   <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-  <AlertDialogOverlay className="fixed inset-0 bg-black bg-opacity-60 z-[60]">
-  <img src="/assets/icons/x.svg" className='absolute top-10 right-10 cursor-pointer text-white'  alt="close" width={20} height={20} onClick={()=>setIsOpen(!isOpen)} />
-  <AlertDialogContent className='bg-slate-800 p-0 border-none z-[99]'>
+  <AlertDialogOverlay className="fixed inset-0 z-[120] bg-black/75 backdrop-blur-sm">
+  <button type="button" className='absolute right-6 top-6 z-[130] grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20' onClick={()=>setIsOpen(!isOpen)} aria-label="Close image viewer">
+    <img src="/assets/icons/x.svg" alt="close" width={18} height={18} />
+  </button>
+  <AlertDialogContent className='z-[130] max-w-2xl border-none bg-transparent p-0 shadow-none'>
    <motion.img
-              src={imageUrl}
+              src={displayImage}
               alt="Profile Large"
-              className="w-full h-full rounded-lg"
+              className="max-h-[82vh] w-full rounded-2xl object-contain"
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}

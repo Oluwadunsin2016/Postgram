@@ -1,4 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
+import moment from "moment";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -58,25 +59,21 @@ export const checkIsLiked = (likeList: string[], userId: string) => {
 };
 
 
-export const formatRelativeTime=(timestamp:string):string=> {
-  const now:any = new Date();
-  const time:any = new Date(timestamp);
-  const diffInSeconds = Math.floor((now - time) / 1000);
+export const formatRelativeTime = (timestamp: string = ""): string => {
+  const time = moment(timestamp);
+  if (!timestamp || !time.isValid()) return "now";
 
-  if (diffInSeconds < 60) {
-    return `${diffInSeconds}s`;
-  }
+  const diffInSeconds = Math.abs(moment().diff(time, "seconds"));
+  if (diffInSeconds < 45) return "now";
 
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) {
-    return diffInMinutes === 1 ? "1min" : `${diffInMinutes}mins`;
-  }
+  const relativeTime = time.fromNow(true);
+  const singularLabels: Record<string, string> = {
+    "a minute": "1 minute",
+    "an hour": "1 hour",
+    "a day": "1 day",
+    "a month": "1 month",
+    "a year": "1 year",
+  };
 
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) {
-    return diffInHours === 1 ? "1h" : `${diffInHours}h`;
-  }
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  return diffInDays === 1 ? "1d" : `${diffInDays}d`;
+  return singularLabels[relativeTime] || relativeTime;
 }

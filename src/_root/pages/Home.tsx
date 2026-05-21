@@ -1,192 +1,111 @@
 import Loader from '@/components/ui/shared/Loader'
 import PostCard from '@/components/ui/shared/PostCard'
-import { useGetAllPosts, useGetAllUsers } from '@/lib/react-query/queries'
-import { useGetRecentPosts } from '@/lib/react-query/queriesAndMutation'
+import StatusTray from '@/components/ui/shared/StatusTray'
+import useDebounce from '@/hooks/useDebounce'
+import { useGetAllPosts, useSearchPosts } from '@/lib/react-query/queries'
 import { Skeleton } from '@nextui-org/react'
-import React, { useEffect, useRef, useState } from 'react'
+import { Search } from 'lucide-react'
+import { useEffect, useState } from "react"
 import { useInView } from 'react-intersection-observer'
 
+const FeedSkeleton = () => (
+  <div className="flex w-full flex-col gap-7">
+    {Array.from({ length: 3 }).map((_, index) => (
+      <div key={index} className="border-b border-white/10 py-5">
+        <div className="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-4">
+          <Skeleton className="h-12 w-12 rounded-full bg-dark-4" />
+          <div className="min-w-0">
+            <Skeleton className="h-5 w-48 rounded-lg bg-dark-4" />
+            <Skeleton className="mt-3 h-4 w-4/5 rounded-lg bg-dark-4" />
+            <Skeleton className="mt-4 h-[22rem] w-full rounded-2xl bg-dark-4" />
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const Home = () => {
-       const [showScrollLeft, setShowScrollLeft] = useState(false);
-  const [showScrollRight, setShowScrollRight] = useState(false);
- const { ref, inView } = useInView();
-  const containerRef = useRef<HTMLDivElement>(null);
-const {data:returnData, isLoading:isPostLoading,isError:isErrorPosts,hasNextPage, fetchNextPage
-}=useGetAllPosts()
-const {data:users,isLoading: isUsersLoading,}=useGetAllUsers()
-
-
-console.log(returnData)
+  const { ref, inView } = useInView();
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm.trim(), 350);
+  const {data:returnData, isLoading:isPostLoading, hasNextPage, fetchNextPage}=useGetAllPosts()
+  const { data: searchedPosts = [], isFetching: isSearchFetching } = useSearchPosts(debouncedSearch);
+  const isSearching = debouncedSearch.length > 0;
 
   useEffect(() => {
-    if (inView ) {
-      fetchNextPage();
-    }
-  }, [inView]);
+    if (inView && !isSearching) fetchNextPage();
+  }, [inView, fetchNextPage, isSearching]);
 
- 
-       const scrollLeft = () => {
-     if (containerRef.current) {
-       containerRef.current.scrollBy({
-         left: -100, // Adjust the scroll amount as needed
-         behavior: "smooth",
-       });
-     }
-   };
- 
-   const scrollRight = () => {
-     if (containerRef.current) {
-       containerRef.current.scrollBy({
-         left: 100, // Adjust the scroll amount as needed
-         behavior: "smooth",
-       });
-     }
-   };
- 
-     const checkOverflow = () => {
-     if (containerRef.current) {
-       const { scrollWidth, clientWidth, scrollLeft } = containerRef.current;
-       setShowScrollLeft(scrollLeft > 0);
-       setShowScrollRight(scrollLeft + clientWidth < scrollWidth);
-     }
-   };
- 
-   useEffect(() => {
-     checkOverflow(); // Initial check
- 
-     // Attach a scroll event listener
-     const container = containerRef.current;
-     if (container) {
-       container.addEventListener("scroll", checkOverflow);
-       window.addEventListener("resize", checkOverflow); // Recheck on window resize
-     }
- 
-     return () => {
-       if (container) {
-         container.removeEventListener("scroll", checkOverflow);
-       }
-       window.removeEventListener("resize", checkOverflow);
-     };
-   }, [users]);
+  const shouldShowPosts = returnData?.pages?.every((item) => item?.posts?.length === 0);
 
-const shouldShowPosts = returnData?.pages?.every((item) => item?.posts?.length === 0);
   return (
     <div className="home-container">
-    <div className="home-posts">
-
-           <div className="relative w-full">
-      {showScrollLeft &&  <button
-          className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 shadow-lg rounded-full p-2"
-          onClick={scrollLeft}
-        >
-            <img
-              src="/assets/icons/chevron-left.svg"
-              width={20}
-              height={20}
-              alt="add" 
+      <div className="home-posts">
+        <section className="content-panel w-full overflow-hidden rounded-2xl p-5 md:p-6">
+          <p className="small-semibold uppercase tracking-[0.24em] text-white/[0.38]">Live feed</p>
+          <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="h2-bold">See what the world is posting</h1>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-white/[0.55]">
+                Follow creators, save inspiration, and jump into conversations from one polished social feed.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex items-center gap-3 rounded-2xl border border-dark-4 bg-dark-3 px-4">
+            <Search size={19} className="text-light-4" />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search posts by caption, location, or tags"
+              className="h-12 flex-1 bg-transparent text-light-1 outline-none placeholder:text-light-4 small-regular"
             />
-        </button>}
-     {isUsersLoading? 
-              <div className="flex gap-4 items-center justify-center my-4">
-                {Array(4)
-                  .fill("box")
-                  .map((_, id) => (
-                    <Skeleton
-                      key={id}
-                      className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] flex-none rounded-full"
-                    />
-                  ))}
-              </div> : <div
-          ref={containerRef}
-          className="flex gap-4 items-center justify-center my-4 overflow-x-auto scrollbar-hide"
-        >
-          {users?.map((creator:any) => (
-            <div
-              key={creator._id}
-              className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-            >
-              <img
-                src={creator?.imageUrl || "/assets/images/profile.png"}
-                alt="creator"
-                className="object-cover w-full h-full"
-              />
-            </div>
-          ))}
-          {users?.map((creator:any) => (
-            <div
-              key={creator._id}
-              className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-            >
-              <img
-                src={creator?.imageUrl || "/assets/images/profile.png"}
-                alt="creator"
-                className="object-cover w-full h-full"
-              />
-            </div>
-          ))}
-          {users?.map((creator:any) => (
-            <div
-              key={creator._id}
-              className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-            >
-              <img
-                src={creator?.imageUrl || "/assets/images/profile.png"}
-                alt="creator"
-                className="object-cover w-full h-full"
-              />
-            </div>
-          ))}
-          {users?.map((creator:any) => (
-            <div
-              key={creator._id}
-              className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-            >
-              <img
-                src={creator?.imageUrl || "/assets/images/profile.png"}
-                alt="creator"
-                className="object-cover w-full h-full"
-              />
-            </div>
-          ))}
-        </div>}
-  
-        {/* Right Scroll Icon */}
-      {showScrollRight &&  <button
-          className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 shadow-lg rounded-full p-2"
-          onClick={scrollRight}
-        >
-          <img
-              src="/assets/icons/chevron-right.svg"
-              width={20}
-              height={20}
-              alt="add" 
-            />
-        </button>}
-      </div>
+          </div>
+        </section>
 
-    <h2 className='b
-    h3-bold md:h2-bold text-left w-full'>Home Feed</h2>
-    {isPostLoading && !returnData ?(
-    <Loader/>
-    ):shouldShowPosts ? (
-          <p className="text-light-4 mt-10 text-center w-full">End of posts</p>
-        ):(
-    <div className='flex flex-col flex-1 gap-9 w-full'>
-    {returnData?.pages?.map((page:any,i:any)=>(
-     <div key={`page-${i}`} className='flex flex-col flex-1 gap-9 w-full'>
-    {page?.posts.map((post:any,index:any)=>(
-    <PostCard key={index} post={post}/>
-    ))}
-    </div>
-    ))}
-      {hasNextPage && (
-        <div ref={ref} className="mt-10">
-          <Loader />
+        <StatusTray />
+
+        <div className="flex w-full items-center justify-between">
+          <div>
+            <p className="small-semibold uppercase tracking-[0.24em] text-white/[0.35]">{isSearching ? "Search results" : "Latest"}</p>
+            <h2 className="h3-bold">{isSearching ? `Posts matching "${debouncedSearch}"` : "Home Feed"}</h2>
+          </div>
         </div>
-      )}
-    </div>
-    )}
-    </div>
+
+        {isSearching ? (
+          isSearchFetching ? (
+            <FeedSkeleton />
+          ) : searchedPosts.length > 0 ? (
+            <div className='flex w-full flex-col gap-7'>
+              {searchedPosts.map((post:any)=>(
+                <PostCard key={post._id} post={post}/>
+              ))}
+            </div>
+          ) : (
+            <p className="text-light-4 mt-10 text-center w-full">No posts matched your search</p>
+          )
+        ) : isPostLoading && !returnData ? (
+          <FeedSkeleton />
+        ) : shouldShowPosts ? (
+          <p className="text-light-4 mt-10 text-center w-full">End of posts</p>
+        ) : (
+          <div className='flex w-full flex-col gap-7'>
+            {returnData?.pages?.map((page:any,i:any)=>(
+              <div key={`page-${i}`} className='flex w-full flex-col gap-7'>
+                {page?.posts.map((post:any)=>(
+                  <PostCard key={post._id} post={post}/>
+                ))}
+              </div>
+            ))}
+            {hasNextPage && (
+              <div ref={ref} className="mt-4">
+                <Loader />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

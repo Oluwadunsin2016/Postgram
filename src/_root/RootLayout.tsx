@@ -4,31 +4,26 @@ import RightSidebar from '@/components/ui/shared/RightSidebar'
 import Topbar from '@/components/ui/shared/Topbar'
 import { useUserContext } from '@/context/AuthContext'
 import { Spinner } from '@nextui-org/react'
-import React from 'react'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import NetworkErrorPage from './pages/NetworkErrorPage'
 
 const RootLayout = () => {
 const {pathname}=useLocation()
-const {isAuthenticated,isLoading,internetError}=useUserContext()
+const {isLoading,internetError}=useUserContext()
 const show = pathname=='/'|| pathname=='/create-post'||  pathname.includes('/update-post')||  pathname.includes('/update-profile')
+const isImmersive = pathname === '/status'
 if (isLoading) return <div className='w-full min-h-screen flex flex-col items-center justify-center gap-2'><Spinner size='lg' className='text-indigo-600' /> <span>Please wait...</span> </div>
 if (internetError) return <NetworkErrorPage/>
   return (
-   <>
-   {/* {!isAuthenticated?<Navigate to='/sign-in'/>
-    : */}
-    <div className='w-full md:flex'>
-    <Topbar/>
-    <LeftSidebar/>
-    {/* <section className={`flex flex-1 min-h-screen ${show?'md:max-w-[50%]':'md:max-w-[80%]'}`}> */}
-    <section className='flex flex-1 min-h-screen md:max-w-[80%]'>
+    <div className={`app-shell ${isImmersive ? 'md:!grid-cols-1 xl:!grid-cols-1' : show ? '' : 'xl:grid-cols-[17rem_minmax(0,1fr)]'}`}>
+    {!isImmersive && <Topbar/>}
+    {!isImmersive && <LeftSidebar/>}
+    <section className='app-main'>
     <Outlet/>
     </section>
-    {show&&<RightSidebar/>}
-    <Bottombar/>
+    {show && !isImmersive && <RightSidebar/>}
+    {!isImmersive && <Bottombar/>}
     </div>
-   </>
   )
 }
 

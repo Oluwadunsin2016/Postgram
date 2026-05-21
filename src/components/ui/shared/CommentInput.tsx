@@ -1,242 +1,133 @@
-// import React from 'react'
-// import { Input } from '../input'
-
-// const CommentInput = () => {
-//   return (
-//     <div className='w-full'>
-//     <div className='relative flex items-center gap-2'>
-//     <p className='text-xl cursor-pointer'>🙂</p>
-//     <Input size={10} type="text" placeholder='Write your comment...' className="h-8 bg-dark-4 border-none placeholder:text-light-4 focus-visible:ring-1 rounded-full focus-visible:ring-offset-1 ring-offset-light-3 w-full"/>
-//      <img
-//            src="/assets/icons/send.svg"
-//           alt="like"
-//           width={20}
-//           height={20}
-//           className="cursor-pointer absolute right-3 top-1.5"
-//         />
-//     </div>
-//     </div>
-//   )
-// }
-
-// export default CommentInput
-
-
-
-import React, { createRef, useEffect, useState } from 'react';
-// import { HiPaperAirplane } from 'react-icons/hi2';
+import React, { useEffect, useRef, useState } from 'react';
 import EmojiPicker from 'emoji-picker-react';
-// import { useCreateComment, useUpdateComment } from '../../services/apis';
 import './comment.css';
 import { useAddComment } from '@/lib/react-query/queries';
+import { Smile, Send } from 'lucide-react';
 
 type CommentPropsType = {
-  postId: number | any;
-  commentId: number | any;
+  postId: string;
+  parentId?: string;
   message: string;
-  editMode: boolean;
+  placeholder?: string;
+  autoFocus?: boolean;
+  compact?: boolean;
   setMessage: (message: string) => void;
-  setEditMode:(status:boolean)=>void
+  onSubmitMessage?: (text: string) => void;
+  isSubmitting?: boolean;
+  onCancel?: () => void;
+  onSuccess?: () => void;
 };
-const CommentInput = ({
-  postId,
-  message,
-  setMessage,
-  setEditMode,
-  editMode,
-  commentId
-}: CommentPropsType) => {
-  //   const [message, setMessage] = useState('');
-  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const textareaRef = createRef<HTMLTextAreaElement>();
-  const { mutate } = useAddComment();
-//   const { mutate:updateComment } = useUpdateComment();
 
-  const handleMessage = (e: any) => {
-    e.preventDefault();
-    setMessage(e.target.value);
+const CommentInput = ({ postId, parentId, message, placeholder = "Add a comment...", autoFocus = false, compact = false, setMessage, onSubmitMessage, isSubmitting = false, onCancel, onSuccess }: CommentPropsType) => {
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { mutate, isLoading } = useAddComment();
+
+  const resizeTextarea = () => {
     const ref = textareaRef.current;
-    if (ref) {
-      ref.style.height = 'auto';
-      const scrollHeight = ref.scrollHeight;
-      const maxHeight = 3 * 50;
-      ref.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-      setIsExpanded(scrollHeight > 50);
-    }
+    if (!ref) return;
+
+    ref.style.height = 'auto';
+    ref.style.height = `${Math.min(ref.scrollHeight, 112)}px`;
   };
 
   useEffect(() => {
-    const ref = textareaRef.current;
-    if (ref && message?.trim()) {
-      ref.style.height = 'auto';
-      const scrollHeight = ref.scrollHeight;
-      const maxHeight = 3 * 50;
-      ref.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-      setIsExpanded(scrollHeight > 50);
-    }
+    resizeTextarea();
   }, [message]);
 
   const handleEmojiClick = ({ emoji }: { emoji: string }) => {
     const ref = textareaRef.current;
-    if (ref) {
-      const start = ref.selectionStart ?? 0;
-      const end = ref.selectionEnd ?? 0;
-
-      // Insert emoji at the cursor position
-      const updatedMessage =
-        message.slice(0, start) + emoji + message.slice(end);
-      setMessage(updatedMessage);
-
-      // Set cursor position to be right after the emoji
-      const newCursorPosition = start + emoji.length;
-      setTimeout(() => {
-        if (ref) {
-          ref.focus();
-          ref.selectionStart = ref.selectionEnd = newCursorPosition;
-        }
-      }, 0); // Timeout ensures the cursor position update happens after the message update
+    if (!ref) {
+      setMessage(message + emoji);
+      return;
     }
+
+    const start = ref.selectionStart ?? message.length;
+    const end = ref.selectionEnd ?? message.length;
+    const updatedMessage = message.slice(0, start) + emoji + message.slice(end);
+    setMessage(updatedMessage);
+
+    setTimeout(() => {
+      ref.focus();
+      ref.selectionStart = ref.selectionEnd = start + emoji.length;
+    }, 0);
   };
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    console.log(message, postId);
-    const ref = textareaRef.current;
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const text = message.trim();
+    if (!text || !postId) return;
+
+    if (onSubmitMessage) {
+      onSubmitMessage(text);
+      return;
+    }
+
     mutate(
-      { text: message, postId },
+      { text, postId, parentId },
       {
-        onSuccess: (data) => {
+        onSuccess: () => {
           setMessage('');
-          if (ref) {
-            ref.style.height = 'auto';
-            const scrollHeight = ref.scrollHeight;
-            const maxHeight = 3 / 50;
-            ref.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-            setIsExpanded(false);
-          }
-          console.log(data);
+          setIsEmojiPickerOpen(false);
+          if (textareaRef.current) textareaRef.current.style.height = 'auto';
+          onSuccess?.();
         },
       },
     );
-    // if (editMode) {
-    // console.log(message);
-    
-    //    updateComment(
-    //   { comment: message, id:commentId,request_id },
-    //   {
-    //     onSuccess: (data) => {
-    //       setMessage('');
-    //       setEditMode(false)
-    //       if (ref) {
-    //         ref.style.height = 'auto';
-    //         const scrollHeight = ref.scrollHeight;
-    //         const maxHeight = 3 / 50;
-    //         ref.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-    //         setIsExpanded(false);
-    //       }
-    //       console.log(data);
-    //     },
-    //   },
-    // );
-    // } else {  
-    // mutate(
-    //   { text: message, postId },
-    //   {
-    //     onSuccess: (data) => {
-    //       setMessage('');
-    //       if (ref) {
-    //         ref.style.height = 'auto';
-    //         const scrollHeight = ref.scrollHeight;
-    //         const maxHeight = 3 / 50;
-    //         ref.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-    //         setIsExpanded(false);
-    //       }
-    //       console.log(data);
-    //     },
-    //   },
-    // );
-    // }
   };
 
-  const handleKeyPress = (e: any) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Escape' && onCancel) {
+      event.preventDefault();
+      onCancel();
+      return;
+    }
+
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSubmit(event);
     }
   };
 
+  const isSending = isLoading || isSubmitting;
+
   return (
-    <div
-      className={`
-          flex  
-          gap-1 
-          lg:gap-1
-          w-full
-          ${isExpanded ? 'items-end' : 'items-center'}
-        `}
-    >
-       {isEmojiPickerOpen && (
-        <div className="absolute bottom-[5rem] md:bottom-[6rem]">
-          <EmojiPicker
-            height={350}
-            width={300}
-            onEmojiClick={handleEmojiClick}
-          />
+    <form onSubmit={handleSubmit} className={`relative z-[1000] flex w-full items-end gap-2 overflow-visible rounded-2xl border border-dark-4 bg-dark-3 p-2 ${compact ? "rounded-xl bg-dark-4/70" : ""}`}>
+      {isEmojiPickerOpen && (
+        <div className="absolute bottom-[4.5rem] left-0 z-[10000]">
+          <EmojiPicker height={340} width={300} onEmojiClick={handleEmojiClick} />
         </div>
       )}
-      <div>
-        <span
-          className="text-xl cursor-pointer"
-          onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
-        >
-          😊
-        </span>
-      </div>
-      <form
-        onSubmit={handleSubmit}
-        className={`flex relative ${
-          isExpanded ? 'items-end' : 'items-center'
-        } gap-2 lg:gap-4 w-full`}
+
+      <button
+        type="button"
+        onClick={() => setIsEmojiPickerOpen((value) => !value)}
+        className="grid h-10 w-10 flex-none place-items-center rounded-xl text-light-3 transition hover:bg-dark-4 hover:text-white"
+        aria-label="Add emoji"
       >
-        <textarea
-          value={message}
-          ref={textareaRef}
-          onChange={handleMessage}
-          onKeyDown={handleKeyPress}
-          id="message"
-          placeholder="Write a comment"
-          className={`
-    h-4 bg-dark-3 rounded-full border-none focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-light-3 w-full ps-2 pe-8 py-2 outline-none 
-    customScrollbar
-    ${isExpanded ? 'rounded-lg' : 'rounded-full'}
-  `}
-          rows={1}
-          style={{
-            minHeight: '40px',
-            maxHeight: '100px',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!message?.trim()}
-          className="
-              rounded-full
-              cursor-pointer 
-              transition
-              absolute right-3 top-2.5
-            "
-        >
-            <img
-           src="/assets/icons/send.svg"
-          alt="like"
-          width={20}
-          height={20}
-        //   className=""
-        />
-        </button>
-      </form>
-    </div>
+        <Smile size={20} />
+      </button>
+
+      <textarea
+        ref={textareaRef}
+        value={message}
+        onChange={(event) => setMessage(event.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+        className="min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm text-light-1 outline-none placeholder:text-light-4 custom-scrollbar"
+        rows={1}
+      />
+
+      <button
+        type="submit"
+        disabled={!message.trim() || isSending}
+        className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-primary-500 text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-50"
+        aria-label="Post comment"
+      >
+        <Send size={18} />
+      </button>
+    </form>
   );
 };
 

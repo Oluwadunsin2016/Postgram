@@ -1,510 +1,370 @@
 import { Button } from "@/components/ui/button";
+import EditProfileModal from "@/components/ui/shared/EditProfileModal";
 import ImageView from "@/components/ui/shared/ImageView";
-import Loader from "@/components/ui/shared/Loader";
+import PostCard from "@/components/ui/shared/PostCard";
 import { useUserContext } from "@/context/AuthContext";
 import {
+  useChangeCoverPhoto,
+  useChangeProfilePhoto,
   useFollowUser,
-  useGetAllUsers,
   useGetUserProfile,
   useUnfollowUser,
 } from "@/lib/react-query/queries";
-import {
-  useGetSavedPosts,
-  useGetUserPosts,
-} from "@/lib/react-query/queriesAndMutation";
-import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import { Skeleton, Tab, Tabs } from "@nextui-org/react";
-import { useQueryClient } from "@tanstack/react-query";
-import React, { MouseEvent, useEffect, useRef, useState } from "react";
+import { Bookmark, Camera, Image, MapPin, MessageCircle, Pencil, Tag, UserPlus } from "lucide-react";
+import { ChangeEvent, MouseEvent, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+const Stat = ({ value = 0, label }: { value?: number; label: string }) => (
+  <li className="rounded-2xl border border-dark-4 bg-dark-3 px-4 py-3 text-center">
+    <p className="body-bold text-primary-500">{value}</p>
+    <p className="small-medium text-light-3">{label}</p>
+  </li>
+);
+
+const EmptyPanel = ({ title, body }: { title: string; body: string }) => (
+  <div className="content-panel flex min-h-60 w-full flex-col items-center justify-center rounded-2xl p-8 text-center">
+    <p className="body-bold">{title}</p>
+    <p className="mt-2 max-w-sm text-light-3 small-regular">{body}</p>
+  </div>
+);
+
 const Profile = () => {
-  // const { data: savedPosts, isLoading: isPostLoading } = useGetSavedPosts();
   const [selected, setSelected] = useState("Posts");
   const [isFollowing, setIsFollowing] = useState(false);
-    const [isOpen, setIsOpen] = useState(false)
-     const [haveToFollow, setHaveToFollow] = useState(false);
-       const [showScrollLeft, setShowScrollLeft] = useState(false);
-  const [showScrollRight, setShowScrollRight] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const { id } = useParams();
-  console.log(id);
-  const queryClient = useQueryClient();
+  const profileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
-const {data:users,isLoading: isUsersLoading,}=useGetAllUsers()
-  const { mutateAsync: followUser,isSuccess:isFollowed } = useFollowUser();
-  const { mutateAsync: unfollowUser,isSuccess:isUnfollowed } = useUnfollowUser();
-  const { data: user, isLoading: isUserLoading } = useGetUserProfile(id || "");
   const { user: currentUser } = useUserContext();
-  const { data: LoggedInUser } = useGetUserProfile(currentUser?._id || "");
-  console.log(user);
-    const containerRef = useRef<HTMLDivElement>(null);
+  const { data: profile, isLoading } = useGetUserProfile(id || "");
+  const { data: loggedInProfile } = useGetUserProfile(currentUser?._id || "");
+  const { mutateAsync: followUser } = useFollowUser();
+  const { mutateAsync: unfollowUser } = useUnfollowUser();
+  const { mutateAsync: changeProfilePhoto } = useChangeProfilePhoto();
+  const { mutateAsync: changeCoverPhoto, isLoading: isCoverUploading } = useChangeCoverPhoto();
 
-useEffect(() => {
-queryClient.invalidateQueries({queryKey:['getProfileUser',id]})
-}, [isFollowed,isUnfollowed])
-
+  const isOwnProfile = profile?._id === currentUser?._id;
+  const shouldFollowBack =
+    !profile?.followers?.includes(currentUser?._id) &&
+    loggedInProfile?.followers?.includes(profile?._id);
 
   useEffect(() => {
-    setIsFollowing(user?.followers?.includes(currentUser?._id));
-    if (!user?.followers?.includes(currentUser?._id) && LoggedInUser?.followers?.includes(user?._id)) {
-      setHaveToFollow(true)
-    }else if (user?.followers?.includes(currentUser?._id) && LoggedInUser?.followers?.includes(user?._id)){
-      setHaveToFollow(false)
-    }else{
-      setHaveToFollow(false)
-    }
-  }, [currentUser, user]);
+    setIsFollowing(!!profile?.followers?.includes(currentUser?._id));
+  }, [currentUser?._id, profile?.followers]);
 
-  const handleFollow = async (e: MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await followUser(user?._id);
-      setIsFollowing(true);
-    } catch (error) {
-      console.error("Error following user:", error);
-    }
-  };
+  const handleFollow = async (event: MouseEvent) => {
+    event.stopPropagation();
+    if (!profile?._id) return;
 
-  const handleUnfollow = async (e: MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await unfollowUser(user._id);
+    if (isFollowing) {
+      await unfollowUser(profile._id);
       setIsFollowing(false);
-    } catch (error) {
-      console.error("Error unfollowing user:", error);
+    } else {
+      await followUser(profile._id);
+      setIsFollowing(true);
     }
   };
 
-  useEffect(() => {
-    queryClient.invalidateQueries({
-      queryKey: ['getProfileUser', id],
-    });
-  }, [id]);
-
-  const changeSelect = (result: any) => {
-    setSelected(result);
+  const selectProfilePhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !profile?._id) return;
+    await changeProfilePhoto({ file, userId: profile._id });
+    event.target.value = "";
   };
 
-      const scrollLeft = () => {
-    if (containerRef.current) {
-      containerRef.current.scrollBy({
-        left: -100, // Adjust the scroll amount as needed
-        behavior: "smooth",
-      });
-    }
+  const selectCoverPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !profile?._id) return;
+    await changeCoverPhoto({ file, userId: profile._id });
+    event.target.value = "";
   };
 
-  const scrollRight = () => {
-    if (containerRef.current) {
-      containerRef.current.scrollBy({
-        left: 100, // Adjust the scroll amount as needed
-        behavior: "smooth",
-      });
-    }
-  };
-
-    const checkOverflow = () => {
-    if (containerRef.current) {
-      const { scrollWidth, clientWidth, scrollLeft } = containerRef.current;
-      setShowScrollLeft(scrollLeft > 0);
-      setShowScrollRight(scrollLeft + clientWidth < scrollWidth);
-    }
-  };
-
-  useEffect(() => {
-    checkOverflow(); // Initial check
-
-    // Attach a scroll event listener
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener("scroll", checkOverflow);
-      window.addEventListener("resize", checkOverflow); // Recheck on window resize
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener("scroll", checkOverflow);
-      }
-      window.removeEventListener("resize", checkOverflow);
-    };
-  }, [users]);
-
-  const formattedBio = user?.bio
-    ? user.bio.replace(/\n/g, "<br />")
-    : "No biography";
-
-  return (
-    <div className="common-container">
-    <ImageView setIsOpen={setIsOpen} isOpen={isOpen} imageUrl={user?.imageUrl} />
-      {isUserLoading ? (
-        <div className="w-full flex gap-4 md:gap-8">
-          <Skeleton className="h-[5rem] w-[5rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full" />
-
-          <div className="w-full flex flex-col gap-2">
-            <div className="flex flex-row gap-4 md:gap-8">
-              <Skeleton className="h-6 w-[80%] rounded-lg" />
-              <div className="hidden md:flex  items-center gap-4">
-                <Skeleton className="h-[2rem] w-[4rem] rounded" />
-                <Skeleton className="h-[2rem] w-[4rem] rounded" />
-              </div>
-            </div>
-            <Skeleton className="h-4 w-[10rem] rounded-lg" />
-
-            <ul className="my-4 flex items-center gap-4 md:gap-10">
-              <li className="flex flex-col items-center gap-2">
-                <Skeleton className="h-3 w-[2.5rem] md:h-5 md:w-[3.5rem] rounded-lg" />
-                <Skeleton className="h-3 w-[3rem] md:h-5 md:w-[5rem] rounded-lg" />
-              </li>
-              <li className="flex flex-col items-center gap-2">
-                <Skeleton className="h-3 w-[2.5rem] md:h-5 md:w-[3.5rem] rounded-lg" />
-                <Skeleton className="h-3 w-[3rem] md:h-5 md:w-[5rem] rounded-lg" />
-              </li>
-              <li className="flex flex-col items-center gap-2">
-                <Skeleton className="h-3 w-[2.5rem] md:h-5 md:w-[3.5rem] rounded-lg" />
-                <Skeleton className="h-3 w-[3rem] md:h-5 md:w-[5rem] rounded-lg" />
-              </li>
-            </ul>
-
-            <div className="my-4 flex flex-col gap-2 md:max-w-[70%]">
-              <Skeleton className="h-4 w-full rounded-lg" />
-              <Skeleton className="h-4 w-[70%] rounded-lg" />
-              <Skeleton className="h-4 w-[80%] rounded-lg" />
-              <Skeleton className="h-4 w-[30%] rounded-lg" />
-            </div>
-
-            <div className="flex md:hidden  items-center gap-4">
-              <Skeleton className="h-[2rem] w-[4rem] rounded" />
-              <Skeleton className="h-[2rem] w-[4rem] rounded" />
-            </div>
+  if (isLoading) {
+    return (
+      <div className="common-container">
+        <div className="content-panel mx-auto flex w-full max-w-5xl gap-5 rounded-2xl p-5">
+          <Skeleton className="h-24 w-24 flex-none rounded-full md:h-36 md:w-36" />
+          <div className="flex flex-1 flex-col gap-4">
+            <Skeleton className="h-7 w-1/2 rounded-lg" />
+            <Skeleton className="h-4 w-1/3 rounded-lg" />
+            <Skeleton className="h-20 w-full rounded-lg" />
           </div>
-        </div>
-      ) : (
-        <div className="w-full flex gap-4 md:gap-8">
-          <div className="h-[5rem] w-[5rem] md:h-[10rem] md:w-[10rem] flex-none rounded-full overflow-hidden cursor-pointer">
-            <img
-              src={user?.imageUrl || "/assets/icons/profile-placeholder.svg"}
-              alt="creator"
-              className="object-cover w-full h-full"
-              onClick={()=>setIsOpen(!isOpen)}
-              
-            />
-          </div>
-          <div className="flex flex-col">
-            <div className="flex flex-col md:flex-row  gap-4 md:gap-8">
-              <div>
-                <h3 className="body-bold md:h2-bold line-clamp-1">
-                  {user?.name}
-                </h3>
-                <p className="small-regular md:body-medium text-primary-500">
-                  @{user?.username}
-                </p>
-              </div>
-              {user?._id == currentUser._id ? (
-                <Link
-                  to={`/update-profile/${user?._id}`}
-                  className="hidden md:flex bg-dark-4 px-4 rounded h-[2.5rem] text-light-1 gap-2 items-center"
-                >
-                  <img
-                    src="/assets/icons/edit.svg"
-                    alt="edit"
-                    width={20}
-                    height={20}
-                  />{" "}
-                  <span>Edit Profile</span>
-                </Link>
-              ) : (
-                <div className="hidden md:flex  items-center gap-4">
-                  <Button
-                    onClick={isFollowing ? handleUnfollow : handleFollow}
-                    className={
-                      isFollowing
-                        ? "text-dark-4 px-4 bg-light-1"
-                        : "bg-primary-500"
-                    }
-                  >
-                    {isFollowing ? 'Unfollow' :haveToFollow?'Follow back' : 'Follow'}
-                  </Button>
-                  <Link to={`/message/${user?._id}`} className="text-dark-4 px-4 bg-light-1 flex gap-2 py-2 rounded-md">
-                    Message
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <ul className="my-4 flex items-center gap-4 md:gap-10">
-              <li className="flex flex-col gap-1 items-center">
-                <p className="text-primary-500">{user?.posts?.length}</p>
-                <p className="font-medium">Posts</p>
-              </li>
-              <li className="flex flex-col gap-1 items-center">
-                <p className="text-primary-500">{user?.followers?.length}</p>
-                <p className="font-medium">Followers</p>
-              </li>
-              <li className="flex flex-col gap-1 items-center">
-                <p className="text-primary-500">{user?.following?.length}</p>
-                <p className="font-medium">Following</p>
-              </li>
-            </ul>
-
-            <div className="my-4 md:max-w-[70%]">
-              <p
-                dangerouslySetInnerHTML={{ __html: formattedBio }}
-                className=""
-              />
-            </div>
-            {user?._id == currentUser._id ? (
-              <div className="flex justify-end items-end  md:hidden">
-                <Link
-                  to={`/update-profile/${user?._id}`}
-                  className="flex bg-dark-4 px-4 rounded h-[2.5rem] text-light-1 gap-2 items-center"
-                >
-                  <img
-                    src="/assets/icons/edit.svg"
-                    alt="edit"
-                    width={20}
-                    height={20}
-                  />{" "}
-                  <span>Edit Profile</span>
-                </Link>
-              </div>
-            ) : (
-              <div className="flex md:hidden  items-center gap-4">
-                <Button
-                  onClick={isFollowing ? handleUnfollow : handleFollow}
-                  className={
-                    isFollowing
-                      ? "text-dark-4 px-4 bg-light-1"
-                      : "bg-primary-500"
-                  }
-                >
-                  {isFollowing ? 'Unfollow' :haveToFollow?'Follow back' : 'Follow'}
-                </Button>
-                <Link to={`/message/${user?._id}`} className="text-dark-4 px-4 bg-light-1 flex gap-2 py-2 rounded-md">
-                  Message
-                </Link>
-              </div>
-            )}
-
-          </div>
-        </div>
-      )}
-
-      
-            <div className="relative">
-    {showScrollLeft &&  <button
-        className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 shadow-lg rounded-full p-2"
-        onClick={scrollLeft}
-      >
-          <img
-            src="/assets/icons/chevron-left.svg"
-            width={20}
-            height={20}
-            alt="add" 
-          />
-      </button>}
-   {isUsersLoading? 
-            <div className="flex gap-4 items-center justify-center my-4">
-              {Array(4)
-                .fill("box")
-                .map((_, id) => (
-                  <Skeleton
-                    key={id}
-                    className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] flex-none rounded-full"
-                  />
-                ))}
-            </div> : <div
-        ref={containerRef}
-        className="flex gap-4 items-center justify-center my-4 overflow-x-auto scrollbar-hide"
-      >
-        {users?.map((creator:any) => (
-          <div
-            key={creator._id}
-            className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-          >
-            <img
-              src={creator?.imageUrl || "/assets/images/profile.png"}
-              alt="creator"
-              className="object-cover w-full h-full"
-            />
-          </div>
-        ))}
-        {users?.map((creator:any) => (
-          <div
-            key={creator._id}
-            className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-          >
-            <img
-              src={creator?.imageUrl || "/assets/images/profile.png"}
-              alt="creator"
-              className="object-cover w-full h-full"
-            />
-          </div>
-        ))}
-        {users?.map((creator:any) => (
-          <div
-            key={creator._id}
-            className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-          >
-            <img
-              src={creator?.imageUrl || "/assets/images/profile.png"}
-              alt="creator"
-              className="object-cover w-full h-full"
-            />
-          </div>
-        ))}
-        {users?.map((creator:any) => (
-          <div
-            key={creator._id}
-            className="h-[3rem] w-[3rem] md:h-[4rem] md:w-[4rem] border-4 border-green-100 flex-none rounded-full overflow-hidden"
-          >
-            <img
-              src={creator?.imageUrl || "/assets/images/profile.png"}
-              alt="creator"
-              className="object-cover w-full h-full"
-            />
-          </div>
-        ))}
-      </div>}
-
-      {/* Right Scroll Icon */}
-    {showScrollRight &&  <button
-        className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white/80 shadow-lg rounded-full p-2"
-        onClick={scrollRight}
-      >
-        <img
-            src="/assets/icons/chevron-right.svg"
-            width={20}
-            height={20}
-            alt="add" 
-          />
-      </button>}
-    </div>
-
-      <div className="flex justify-center md:justify-between w-full max-w-5xl mb-7">
-        <Tabs
-          aria-label="options"
-          selectedKey={selected}
-          onSelectionChange={changeSelect}
-          classNames={{ tabList: "bg-dark-3", cursor: "bg-primary-600" }}
-        >
-          <Tab
-            key="Posts"
-            title={
-              <div className="flex items-center gap-1 px-2">
-                <img
-                  src="/assets/icons/image.svg"
-                  alt="image"
-                  width={20}
-                  height={20}
-                  className={`${selected == "Posts" && "invert-white"}`}
-                />
-
-                <p className="small-medium md:base-medium text-light-2">
-                  Posts
-                </p>
-              </div>
-            }
-          />
-          <Tab
-            key="Reels"
-            title={
-              <div className="flex items-center gap-1 px-2">
-                <img
-                  src="/assets/icons/video.svg"
-                  alt="save"
-                  width={20}
-                  height={20}
-                  className={`${selected == "Reels" && "invert-white"}`}
-                />
-                <p className="small-medium md:base-medium text-light-2">
-                  Reels
-                </p>
-              </div>
-            }
-          />
-          <Tab
-            key="Tagged"
-            title={
-              <div className="flex items-center gap-1 px-2">
-                <img
-                  src="/assets/icons/tag.svg"
-                  alt="collections"
-                  width={20}
-                  height={20}
-                  className={`${selected == "Tagged" && "invert-white"}`}
-                />
-                <p className="small-medium md:base-medium text-light-2">
-                  Tagged
-                </p>
-              </div>
-            }
-          />
-        </Tabs>
-
-        <div className="hidden md:flex-center gap-3 bg-dark-3 rounded-xl px-4 py-2 cursor-pointer">
-          <p className="small-medium md:base-medium text-light-2">All</p>
-          <img
-            src="/assets/icons/filter.svg"
-            width={20}
-            height={20}
-            alt="filter"
-          />
         </div>
       </div>
+    );
+  }
 
-      <div>
-        {selected == "Posts" ? (
-          <div>
-            {isUserLoading ? (
-              <Loader />
-            ) : (
-              <div>
-                {user?.posts?.length > 0 ? (
-                  <div className="grid-container">
-                    {user?.posts?.map((post: any) => (
-                      <div className="relative min-w-80 h-80" key={post?._id}>
-                        <Link
-                          to={`/posts/${post?._id}`}
-                          className="grid-post_link"
-                        >
-                          <img
-                            src={post?.imageUrl}
-                            alt="post"
-                            className="h-full w-full object-cover"
-                          />
-                        </Link>
+  return (
+    <div className="common-container gap-6">
+      <ImageView setIsOpen={setIsOpen} isOpen={isOpen} imageUrl={profile?.imageUrl} />
+      <EditProfileModal isOpen={isEditProfileOpen} onClose={() => setIsEditProfileOpen(false)} user={profile} />
 
-                        <img
-                          src="/assets/icons/copy.svg"
-                          alt="save"
-                          width={20}
-                          height={20}
-                          className="cursor-pointer absolute top-4 right-4"
-                        />
-                        <p className="absolute bottom-4 left-2 line-clamp-1">
-                          {post.caption}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-[10rem]">
-                    <p>No post</p>
+      <section className="content-panel relative z-20 mx-auto w-full max-w-5xl flex-none overflow-hidden rounded-2xl">
+        <input ref={profileInputRef} type="file" accept="image/*" className="hidden" onChange={selectProfilePhoto} />
+        <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={selectCoverPhoto} />
+
+        <div className="relative h-44 bg-gradient-to-r from-primary-600/50 via-primary-500/25 to-dark-3 md:h-72">
+          {profile?.coverImageUrl && (
+            <img src={profile.coverImageUrl} alt={`${profile?.name || "Profile"} cover`} className="h-full w-full object-cover" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" />
+
+          {isOwnProfile && (
+            <>
+              {/* <DropdownMenu>
+                <DropdownMenuTrigger className="absolute left-5 top-5 grid h-12 w-12 place-items-center rounded-full bg-dark-3/80 text-white outline-none backdrop-blur-xl transition hover:bg-dark-3">
+                  <MoreVertical size={24} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="border border-white/10 bg-[#11131a] text-white">
+                  <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => coverInputRef.current?.click()}>
+                    <Camera size={17} />
+                    <span>Update cover photo</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu> */}
+
+              <Button
+                type="button"
+                className="absolute right-5 top-5 hidden rounded-full text-sm bg-white/50 px-3 text-black hover:bg-white/90 transition-all duration-300 md:inline-flex"
+                onClick={() => coverInputRef.current?.click()}
+                disabled={isCoverUploading}
+              >
+                <Camera size={20} className="mr-1" />
+                {isCoverUploading ? "Uploading..." : "Update Cover Photo"}
+              </Button>
+            </>
+          )}
+        </div>
+
+        <div className="px-5 pb-7 md:px-8">
+          <div className="-mt-14 flex flex-col gap-5 md:-mt-20 md:flex-row md:items-end md:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              <div className="relative h-28 w-28 md:h-40 md:w-40">
+                <div className="group cursor-pointer h-full w-full overflow-hidden rounded-full border-4 border-dark-2 bg-dark-4 outline-none ring-2 ring-white/40">
+                     <img
+                     onClick={() => setIsOpen(true)}
+                      src={profile?.imageUrl || "/assets/images/default_user_image.png"}
+                      alt={profile?.name || "creator"}
+                      className="h-full w-full object-cover object-top"
+                    />
+                </div>
+                {/* <DropdownMenu>
+                  <DropdownMenuTrigger className="group h-full w-full overflow-hidden rounded-full border-4 border-dark-2 bg-dark-4 outline-none ring-2 ring-white/40">
+                    <img
+                      src={profile?.imageUrl || "/assets/images/default_user_image.png"}
+                      alt={profile?.name || "creator"}
+                      className="h-full w-full object-cover object-top"
+                    />
+                    {isOwnProfile && (
+                      <span className="absolute inset-0 grid place-items-center bg-black/35 opacity-0 transition group-hover:opacity-100">
+                        <Camera size={28} />
+                      </span>
+                    )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="border border-white/10 bg-[#11131a] text-white">
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => setIsOpen(true)}>View image</DropdownMenuItem>
+                    {isOwnProfile && (
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => profileInputRef.current?.click()}>
+                        {isPhotoUploading ? "Uploading..." : "Update image"}
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu> */}
+                {/* {isOwnProfile && (
+                  <span className="absolute right-1 top-3 grid h-8 w-8 place-items-center rounded-full border-4 border-dark-2 bg-green-500 text-white">
+                    <Check size={17} strokeWidth={4} />
+                  </span>
+                )} */}
+                {isOwnProfile && (
+                  <button
+                    type="button"
+                    className="absolute bottom-3 right-1 grid h-10 w-10 place-items-center rounded-full border-2 border-dark-2 bg-black/55 text-white backdrop-blur"
+                    onClick={() => profileInputRef.current?.click()}
+                    aria-label="Update profile image"
+                  >
+                    <Camera size={20} />
+                  </button>
+                )}
+              </div>
+
+              <div className="pb-1">
+                <h1 className="h2-bold">{profile?.name}</h1>
+                <p className="mt-1 text-primary-500">@{profile?.username}</p>
+                {profile?.location && (
+                  <div className="mt-5 flex items-center gap-2 text-light-3">
+                    <MapPin size={20} />
+                    <span>{profile.location}</span>
                   </div>
                 )}
               </div>
+            </div>
+
+            {isOwnProfile ? (
+              <Button type="button" onClick={() => setIsEditProfileOpen(true)} className="shad-button_dark_4 inline-flex items-center justify-center rounded-full px-6">
+                <Pencil size={17} />
+                <span>Edit Profile</span>
+              </Button>
+            ) : (
+              <div className="flex gap-3">
+                <Button onClick={handleFollow} className={isFollowing ? "shad-button_dark_4" : "shad-button_primary"}>
+                  <UserPlus size={17} />
+                  {isFollowing ? "Following" : shouldFollowBack ? "Follow back" : "Follow"}
+                </Button>
+                <Link to={`/message/${profile?._id}`} className="shad-button_dark_4 inline-flex items-center justify-center">
+                  <MessageCircle size={17} />
+                  <span>Message</span>
+                </Link>
+              </div>
             )}
           </div>
-        ) : selected == "Reels" ? (
-          <div className="h-[10rem] flex items-center justify-center">
-            <p>No reel</p>
+
+          <ul className="mt-6 grid grid-cols-3 gap-3 md:max-w-md">
+            <Stat value={profile?.posts?.length || 0} label="Posts" />
+            <Stat value={profile?.followers?.length || 0} label="Followers" />
+            <Stat value={profile?.following?.length || 0} label="Following" />
+          </ul>
+
+          <div className="mt-6 border-t border-white/10 pt-6">
+            <p className="max-w-2xl whitespace-pre-line text-light-2">
+              {profile?.bio || "No biography yet."}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* <section className="relative z-10 mx-auto w-full max-w-5xl flex-none">
+        {showScrollLeft && (
+          <button
+            type="button"
+            onClick={() => scrollCreators("left")}
+            className="absolute left-0 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-dark-4 bg-dark-3 text-light-1 shadow-lg"
+          >
+            <ChevronLeft size={18} />
+          </button>
+        )}
+
+        {isUsersLoading ? (
+          <div className="content-panel flex gap-4 overflow-hidden rounded-2xl p-4">
+            {Array(8)
+              .fill("creator")
+              .map((_, index) => (
+                <Skeleton key={index} className="h-14 w-14 flex-none rounded-full md:h-16 md:w-16" />
+              ))}
           </div>
         ) : (
-          <div className="h-[10rem] flex items-center justify-center">
-            <p>No tag</p>
+          <div
+            ref={containerRef}
+            className="content-panel flex gap-4 overflow-x-auto rounded-2xl p-4 scrollbar-hide"
+          >
+            {users?.map((creator: any) => (
+              <Link
+                to={`/profile/${creator._id}`}
+                key={creator._id}
+                className="flex w-20 flex-none flex-col items-center gap-2 text-center"
+              >
+                <span className="h-14 w-14 overflow-hidden rounded-full border-2 border-primary-500/70 bg-dark-4 md:h-16 md:w-16">
+                  <img
+                    src={creator?.imageUrl || "/assets/images/default_user_image.png"}
+                    alt={creator?.name || "creator"}
+                    className="h-full w-full object-cover"
+                  />
+                </span>
+                <span className="line-clamp-1 w-full text-xs font-medium text-light-2">{creator?.name}</span>
+              </Link>
+            ))}
           </div>
         )}
-      </div>
+
+        {showScrollRight && (
+          <button
+            type="button"
+            onClick={() => scrollCreators("right")}
+            className="absolute right-0 top-1/2 z-10 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-dark-4 bg-dark-3 text-light-1 shadow-lg"
+          >
+            <ChevronRight size={18} />
+          </button>
+        )}
+      </section> */}
+
+      <section className="relative z-0 mx-auto w-full max-w-5xl flex-none">
+        <div className="mb-5 flex items-center justify-between">
+          <Tabs
+            aria-label="profile sections"
+            selectedKey={selected}
+            onSelectionChange={(key) => setSelected(String(key))}
+            classNames={{
+              tabList: "bg-dark-3",
+              cursor: "bg-primary-600",
+              tabContent: "text-light-3 group-data-[selected=true]:text-white",
+            }}
+          >
+            <Tab
+              key="Posts"
+              title={
+                <div className="flex items-center gap-2 px-2">
+                  <Image size={18} />
+                  <span className={selected === "Posts" ? "text-white" : "text-light-3"}>Posts</span>
+                </div>
+              }
+            />
+            <Tab
+              key="Saved"
+              title={
+                <div className="flex items-center gap-2 px-2">
+                  <Bookmark size={18} />
+                  <span className={selected === "Saved" ? "text-white" : "text-light-3"}>Saved</span>
+                </div>
+              }
+            />
+            <Tab
+              key="Tagged"
+              title={
+                <div className="flex items-center gap-2 px-2">
+                  <Tag size={18} />
+                  <span className={selected === "Tagged" ? "text-white" : "text-light-3"}>Tagged</span>
+                </div>
+              }
+            />
+          </Tabs>
+
+          <div className="hidden items-center gap-2 rounded-xl bg-dark-3 px-4 py-2 text-light-2 md:flex">
+            <span className="small-medium">All</span>
+          </div>
+        </div>
+
+        {selected === "Posts" ? (
+          profile?.posts?.length > 0 ? (
+            <div className="mx-auto flex w-full max-w-3xl flex-col">
+              {profile.posts.map((post: any) => (
+                <PostCard key={post._id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <EmptyPanel title="No posts yet" body="Posts from this creator will appear here." />
+          )
+        ) : selected === "Saved" ? (
+          profile?.saves?.length > 0 ? (
+            <div className="mx-auto flex w-full max-w-3xl flex-col">
+              {profile.saves.map((post: any) => (
+                <PostCard key={post._id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <EmptyPanel title="No saved posts yet" body="Posts saved by this creator will appear here." />
+          )
+        ) : profile?.taggedPosts?.length > 0 ? (
+          <div className="mx-auto flex w-full max-w-3xl flex-col">
+            {profile.taggedPosts.map((post: any) => (
+              <PostCard key={post._id} post={post} />
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel title="No tagged posts" body="Posts this creator is tagged in will appear here." />
+        )}
+      </section>
     </div>
   );
 };
