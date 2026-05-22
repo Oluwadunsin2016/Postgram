@@ -18,6 +18,7 @@ import { getSocket } from "@/lib/socket";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Check, ChevronDown, Copy, Download, FileText, Forward, Image as ImageIcon, Mic, Paperclip, Phone, Pin, Plus, Search, Send, Smile, Video, X } from "lucide-react";
 import { FormEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { LiaCheckDoubleSolid, LiaCheckSolid } from "react-icons/lia";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -84,6 +85,43 @@ const attachmentIcon = {
   video: Video,
   audio: Mic,
   file: FileText,
+};
+
+const formatFileSize = (bytes = 0) => {
+  if (!bytes) return "";
+  const units = ["B", "KB", "MB", "GB"];
+  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / 1024 ** index;
+  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+};
+
+const getFileNameFromUrl = (url = "") => {
+  try {
+    const pathname = new URL(url).pathname;
+    const lastSegment = pathname.split("/").filter(Boolean).pop();
+    return lastSegment ? decodeURIComponent(lastSegment) : "attachment";
+  } catch {
+    return "attachment";
+  }
+};
+
+const downloadAttachment = async (attachment: Attachment) => {
+  if (!attachment.url) return;
+
+  const response = await fetch(attachment.url, { mode: "cors" });
+  if (!response.ok) throw new Error("Unable to download attachment");
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = objectUrl;
+  link.download = attachment.name || getFileNameFromUrl(attachment.url);
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 };
 
 const getMessagePreview = (message?: Message) => {
@@ -221,38 +259,166 @@ const getOverlayPlacement = (trigger: HTMLElement | null, overlayHeight = 300) =
   return spaceBelow < overlayHeight && spaceAbove > spaceBelow ? "up" : "down";
 };
 
-const MessageAttachment = ({ attachment, isMine }: { attachment: Attachment; isMine: boolean }) => {
+const MediaPreviewModal = ({ attachment, onClose }: { attachment: Attachment | null; onClose: () => void }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  if (!attachment) return null;
+
+  const name = attachment.name || "Preview";
+  const size = formatFileSize(attachment.size);
+
+  const handleDownload = async () => {
+    try {
+      setIsDownloading(true);
+      await downloadAttachment(attachment);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 p-3 backdrop-blur-md"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <div
+        className="flex h-full max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-dark-4 bg-dark-1 text-light-1 shadow-2xl ring-1 ring-primary-500/15"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Preview ${name}`}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-dark-4 bg-dark-2/80 px-4 py-3">
+          <div className="min-w-0">
+            <h3 className="truncate small-semibold text-light-1">{name}</h3>
+            <p className="text-light-4 tiny-medium">{size || attachment.mimeType || "Attachment"}</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="grid h-10 w-10 place-items-center rounded-full bg-dark-3 text-light-3 transition hover:bg-dark-4 hover:text-white disabled:opacity-60"
+              aria-label="Download attachment"
+            >
+              {isDownloading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <Download size={18} />}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-10 w-10 place-items-center rounded-full bg-dark-3 text-light-3 transition hover:bg-dark-4 hover:text-white"
+              aria-label="Close preview"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex min-h-0 flex-1 items-center justify-center bg-black/40 p-4">
+          {attachment.type === "image" && (
+            <img src={attachment.url} alt={name} className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl" />
+          )}
+
+          {attachment.type === "video" && (
+            <video src={attachment.url} controls autoPlay className="max-h-full max-w-full rounded-2xl bg-black shadow-2xl" />
+          )}
+
+          {attachment.type === "audio" && (
+            <div className="w-full max-w-xl rounded-3xl border border-dark-4 bg-dark-2 p-6 text-center shadow-2xl">
+              <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-primary-500/15 text-primary-500">
+                <Mic size={30} />
+              </div>
+              <h4 className="truncate base-semibold">{name}</h4>
+              <p className="mb-5 mt-2 text-light-4 small-regular">{size || attachment.mimeType || "Audio file"}</p>
+              <audio src={attachment.url} controls autoPlay className="w-full" />
+            </div>
+          )}
+
+          {attachment.type === "file" && (
+            attachment.mimeType === "application/pdf" ? (
+              <iframe title={name} src={attachment.url} className="h-full min-h-[65vh] w-full rounded-2xl border border-dark-4 bg-white" />
+            ) : (
+              <div className="flex w-full max-w-md flex-col items-center rounded-3xl border border-dark-4 bg-dark-2 p-8 text-center shadow-2xl">
+                <div className="mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-primary-500/15 text-primary-500">
+                  <FileText size={32} />
+                </div>
+                <h4 className="max-w-full truncate base-semibold">{name}</h4>
+                <p className="mt-2 text-light-4 small-regular">This file type cannot be previewed inline yet. You can download it here in the app.</p>
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary-500 px-5 py-2 small-semibold text-white transition hover:bg-primary-600 disabled:opacity-60"
+                >
+                  {isDownloading ? "Downloading..." : "Download file"}
+                </button>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+const MessageAttachment = ({ attachment, isMine, onPreview }: { attachment: Attachment; isMine: boolean; onPreview: (attachment: Attachment) => void }) => {
   if (attachment.type === "image") {
     return (
-      <a href={attachment.url} target="_blank" rel="noreferrer" className="group/attachment block">
+      <button type="button" onClick={() => onPreview(attachment)} className="group/attachment mt-2 block w-full overflow-hidden rounded-xl text-left">
         <img src={attachment.url} alt={attachment.name || "attachment"} className="mt-2 max-h-72 rounded-xl object-cover transition group-hover/attachment:brightness-110" />
-      </a>
+      </button>
     );
   }
 
   if (attachment.type === "video") {
-    return <video src={attachment.url} controls className="mt-2 max-h-72 rounded-xl bg-black" />;
+    return (
+      <button type="button" onClick={() => onPreview(attachment)} className="relative mt-2 block w-full max-w-full overflow-hidden rounded-xl text-left">
+        <video src={attachment.url} className="max-h-72 w-full rounded-xl bg-black" />
+        <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-sm font-semibold text-white">Preview video</span>
+      </button>
+    );
   }
 
   if (attachment.type === "audio") {
-    return <audio src={attachment.url} controls className="mt-2 w-64 max-w-full" />;
+    return (
+      <button
+        type="button"
+        onClick={() => onPreview(attachment)}
+        className={`mt-2 flex w-full max-w-sm items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${
+          isMine ? "border-white/20 bg-white/10 hover:bg-white/15" : "border-dark-4 bg-dark-4 hover:bg-dark-2"
+        }`}
+      >
+        <span className="grid h-10 w-10 flex-none place-items-center rounded-lg bg-primary-500/15 text-primary-500">
+          <Mic size={20} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate small-semibold">{attachment.name || "Audio message"}</span>
+          <span className="block text-light-4 tiny-medium">{formatFileSize(attachment.size) || attachment.mimeType || "Tap to play"}</span>
+        </span>
+      </button>
+    );
   }
 
   const Icon = attachmentIcon[attachment.type] || FileText;
 
   return (
-    <a
-      href={attachment.url}
-      target="_blank"
-      rel="noreferrer"
+    <button
+      type="button"
+      onClick={() => onPreview(attachment)}
       className={`mt-2 flex items-center gap-3 rounded-xl border px-3 py-2 transition ${
         isMine ? "border-white/20 bg-white/10 hover:bg-white/15" : "border-dark-4 bg-dark-4 hover:bg-dark-2"
       }`}
     >
       <Icon size={20} />
-      <span className="min-w-0 flex-1 truncate small-medium">{attachment.name || "Download file"}</span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block truncate small-medium">{attachment.name || "File attachment"}</span>
+        <span className="block text-light-4 tiny-medium">{formatFileSize(attachment.size) || attachment.mimeType || "Tap to preview"}</span>
+      </span>
       <Download size={16} />
-    </a>
+    </button>
   );
 };
 
@@ -281,6 +447,7 @@ const Chats = () => {
   const [forwardingMessage, setForwardingMessage] = useState<Message | null>(null);
   const [selectedForwardIds, setSelectedForwardIds] = useState<string[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<Message | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState("");
   const [chatSearch, setChatSearch] = useState("");
   const [contactSearch, setContactSearch] = useState("");
@@ -915,7 +1082,7 @@ const Chats = () => {
                             )}
                             {message.text && <p className={`whitespace-pre-wrap base-regular ${message.deletedForEveryone ? "italic opacity-75" : ""}`}>{message.text}</p>}
                             {!message.deletedForEveryone && message.attachments?.map((attachment, index) => (
-                              <MessageAttachment key={`${attachment.url}-${index}`} attachment={attachment} isMine={isMine} />
+                              <MessageAttachment key={`${attachment.url}-${index}`} attachment={attachment} isMine={isMine} onPreview={setPreviewAttachment} />
                             ))}
                             {uniqueReactions.length > 0 && (
                               <button type="button" onClick={() => setReactionDetailsMessage(message)} className={`absolute -bottom-5 flex items-center gap-1 rounded-full border border-dark-4 bg-dark-1 px-2 py-0.5 text-sm shadow-lg ${isMine ? "right-4" : "left-4"}`}>
@@ -1054,6 +1221,8 @@ const Chats = () => {
           </div>
         </div>
       )}
+
+      <MediaPreviewModal attachment={previewAttachment} onClose={() => setPreviewAttachment(null)} />
 
       {reactionDetailsMessage && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => setReactionDetailsMessage(null)}>
